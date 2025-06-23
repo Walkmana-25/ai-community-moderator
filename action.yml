@@ -6,20 +6,17 @@ branding:
   color: 'blue'
 inputs:
   github-token:
-    description: 'GitHub token for API access'
+    description: 'GitHub token for API access and GitHub Models authentication'
     required: true
     default: ${{ github.token }}
-  openai-api-key:
-    description: 'OpenAI API key for GitHub Models'
-    required: true
   openai-base-url:
-    description: 'OpenAI base URL for GitHub Models'
+    description: 'GitHub Models base URL'
     required: false
-    default: 'https://models.inference.ai.azure.com'
+    default: 'https://models.github.ai/inference'
   model:
     description: 'AI model to use for moderation'
     required: false
-    default: 'gpt-4o'
+    default: 'openai/gpt-4.1'
   severity-threshold:
     description: 'Severity threshold for taking action (1-10)'
     required: false

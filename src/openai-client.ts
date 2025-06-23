@@ -72,7 +72,7 @@ export class OpenAIClient {
   async testConnection(): Promise<boolean> {
     try {
       const response = await this.client.chat.completions.create({
-        model: 'gpt-4o',
+        model: 'openai/gpt-4.1',
         messages: [{ role: 'user', content: 'Test connection' }],
         max_tokens: 5
       });

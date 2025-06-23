@@ -4,7 +4,7 @@ An AI-powered GitHub Action that helps moderate community interactions by enforc
 
 ## Features
 
-- **Automated Moderation**: Uses GPT-4o to analyze issues, pull requests, and comments
+- **Automated Moderation**: Uses GitHub Models with OpenAI GPT-4.1 to analyze issues, pull requests, and comments
 - **Context-Aware**: Leverages your repository's contributing guidelines and code of conduct
 - **Multiple Actions**: Can post helpful comments, hide inappropriate content, or lock discussions
 - **Configurable**: Adjustable severity thresholds and moderation actions
@@ -34,11 +34,11 @@ jobs:
       contents: read
       issues: write
       pull-requests: write
+      models: read  # Required for GitHub Models access
     steps:
       - uses: benbalter/ai-community-moderator@v1
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          openai-api-key: ${{ secrets.OPENAI_API_KEY }}
           severity-threshold: 5
 ```
 
@@ -46,10 +46,9 @@ jobs:
 
 | Input | Description | Required | Default |
 |-------|-------------|----------|---------|
-| `github-token` | GitHub token for API access | Yes | `${{ github.token }}` |
-| `openai-api-key` | OpenAI API key for GitHub Models | Yes | - |
-| `openai-base-url` | OpenAI base URL for GitHub Models | No | `https://models.inference.ai.azure.com` |
-| `model` | AI model to use for moderation | No | `gpt-4o` |
+| `github-token` | GitHub token for API access and GitHub Models authentication | Yes | `${{ github.token }}` |
+| `openai-base-url` | GitHub Models base URL | No | `https://models.github.ai/inference` |
+| `model` | AI model to use for moderation | No | `openai/gpt-4.1` |
 | `severity-threshold` | Severity threshold for taking action (1-10) | No | `5` |
 
 ## Outputs
@@ -90,11 +89,11 @@ The `severity-threshold` input controls when actions are taken. The AI rates con
 
 ### GitHub Models
 
-This action is designed to work with GitHub Models, which provides AI inference capabilities. You'll need to:
+This action uses GitHub Models for AI inference capabilities. Authentication is handled automatically using your GitHub token with the following requirements:
 
-1. Ensure your repository has access to GitHub Models
-2. Set up an OpenAI API key that works with GitHub Models
-3. Configure the base URL if different from the default
+1. Your workflow must include the `models: read` permission
+2. Your repository must have access to GitHub Models
+3. The action uses the GitHub token to authenticate with the models service at `https://models.github.ai/inference`
 
 ## Permissions
 
@@ -105,6 +104,7 @@ permissions:
   contents: read        # To read community health files
   issues: write         # To comment on and lock issues
   pull-requests: write  # To comment on and lock PRs
+  models: read          # To access GitHub Models for AI inference
 ```
 
 ## Examples
@@ -115,7 +115,6 @@ permissions:
 - uses: benbalter/ai-community-moderator@v1
   with:
     github-token: ${{ secrets.GITHUB_TOKEN }}
-    openai-api-key: ${{ secrets.OPENAI_API_KEY }}
 ```
 
 ### Strict Moderation
@@ -124,7 +123,6 @@ permissions:
 - uses: benbalter/ai-community-moderator@v1
   with:
     github-token: ${{ secrets.GITHUB_TOKEN }}
-    openai-api-key: ${{ secrets.OPENAI_API_KEY }}
     severity-threshold: 3
 ```
 
@@ -134,7 +132,6 @@ permissions:
 - uses: benbalter/ai-community-moderator@v1
   with:
     github-token: ${{ secrets.GITHUB_TOKEN }}
-    openai-api-key: ${{ secrets.OPENAI_API_KEY }}
     severity-threshold: 8
 ```
 
