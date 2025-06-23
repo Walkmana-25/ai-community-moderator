@@ -36,7 +36,7 @@ jobs:
       pull-requests: write
       models: read  # Required for GitHub Models access
     steps:
-      - uses: benbalter/ai-community-moderator@v1
+      - uses: benbalter/ai-community-moderator@main
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           severity-threshold: 5
