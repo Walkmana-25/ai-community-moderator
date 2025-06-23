@@ -8,4 +8,17 @@ export declare class GitHubClient {
     lockIssue(owner: string, repo: string, issueNumber: number): Promise<void>;
     lockPullRequest(owner: string, repo: string, pullNumber: number): Promise<void>;
     limitInteractions(owner: string, repo: string, limit: 'existing_users' | 'contributors_only' | 'collaborators_only'): Promise<void>;
+    getIssue(owner: string, repo: string, issueNumber: number): Promise<{
+        title: string;
+        body: string | null;
+    }>;
+    getPullRequest(owner: string, repo: string, pullNumber: number): Promise<{
+        title: string;
+        body: string | null;
+    }>;
+    getRecentComments(owner: string, repo: string, issueNumber: number, limit?: number): Promise<Array<{
+        body: string;
+        created_at: string;
+        user: string;
+    }>>;
 }

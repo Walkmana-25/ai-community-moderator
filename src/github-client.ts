@@ -122,4 +122,60 @@ export class GitHubClient {
       throw error;
     }
   }
+
+  async getIssue(owner: string, repo: string, issueNumber: number): Promise<{title: string, body: string | null}> {
+    try {
+      const response = await this.octokit.rest.issues.get({
+        owner,
+        repo,
+        issue_number: issueNumber
+      });
+      return {
+        title: response.data.title,
+        body: response.data.body || null
+      };
+    } catch (error) {
+      core.debug(`Failed to get issue ${issueNumber}: ${error}`);
+      throw error;
+    }
+  }
+
+  async getPullRequest(owner: string, repo: string, pullNumber: number): Promise<{title: string, body: string | null}> {
+    try {
+      const response = await this.octokit.rest.pulls.get({
+        owner,
+        repo,
+        pull_number: pullNumber
+      });
+      return {
+        title: response.data.title,
+        body: response.data.body || null
+      };
+    } catch (error) {
+      core.debug(`Failed to get PR ${pullNumber}: ${error}`);
+      throw error;
+    }
+  }
+
+  async getRecentComments(owner: string, repo: string, issueNumber: number, limit: number = 3): Promise<Array<{body: string, created_at: string, user: string}>> {
+    try {
+      const response = await this.octokit.rest.issues.listComments({
+        owner,
+        repo,
+        issue_number: issueNumber,
+        sort: 'created',
+        direction: 'desc',
+        per_page: limit
+      });
+      
+      return response.data.map(comment => ({
+        body: comment.body || '',
+        created_at: comment.created_at,
+        user: comment.user?.login || 'unknown'
+      })).reverse(); // Reverse to get chronological order (oldest first)
+    } catch (error) {
+      core.debug(`Failed to get recent comments for issue ${issueNumber}: ${error}`);
+      throw error;
+    }
+  }
 }

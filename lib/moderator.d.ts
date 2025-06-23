@@ -24,6 +24,7 @@ export declare class Moderator {
     constructor(config: ModeratorConfig);
     processEvent(context: Context): Promise<ModerationResult>;
     private extractContent;
+    private extractCommentContent;
     private getCommunityContext;
     private getModerationDecision;
     private buildModerationPrompt;

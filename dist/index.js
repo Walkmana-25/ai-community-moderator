@@ -160,6 +160,61 @@ class GitHubClient {
             throw error;
         }
     }
+    async getIssue(owner, repo, issueNumber) {
+        try {
+            const response = await this.octokit.rest.issues.get({
+                owner,
+                repo,
+                issue_number: issueNumber
+            });
+            return {
+                title: response.data.title,
+                body: response.data.body || null
+            };
+        }
+        catch (error) {
+            core.debug(`Failed to get issue ${issueNumber}: ${error}`);
+            throw error;
+        }
+    }
+    async getPullRequest(owner, repo, pullNumber) {
+        try {
+            const response = await this.octokit.rest.pulls.get({
+                owner,
+                repo,
+                pull_number: pullNumber
+            });
+            return {
+                title: response.data.title,
+                body: response.data.body || null
+            };
+        }
+        catch (error) {
+            core.debug(`Failed to get PR ${pullNumber}: ${error}`);
+            throw error;
+        }
+    }
+    async getRecentComments(owner, repo, issueNumber, limit = 3) {
+        try {
+            const response = await this.octokit.rest.issues.listComments({
+                owner,
+                repo,
+                issue_number: issueNumber,
+                sort: 'created',
+                direction: 'desc',
+                per_page: limit
+            });
+            return response.data.map(comment => ({
+                body: comment.body || '',
+                created_at: comment.created_at,
+                user: comment.user?.login || 'unknown'
+            })).reverse(); // Reverse to get chronological order (oldest first)
+        }
+        catch (error) {
+            core.debug(`Failed to get recent comments for issue ${issueNumber}: ${error}`);
+            throw error;
+        }
+    }
 }
 exports.GitHubClient = GitHubClient;
 //# sourceMappingURL=github-client.js.map
@@ -294,7 +349,7 @@ class Moderator {
         const { eventName, payload } = context;
         core.info(`Processing event: ${eventName}`);
         // Extract content to moderate based on event type
-        const contentToModerate = this.extractContent(eventName, payload);
+        const contentToModerate = await this.extractContent(eventName, payload, context);
         if (!contentToModerate) {
             return { actionTaken: 'none', reason: 'No content to moderate' };
         }
@@ -308,7 +363,7 @@ class Moderator {
         }
         return { actionTaken: 'none', reason: 'Content deemed acceptable' };
     }
-    extractContent(eventName, payload) {
+    async extractContent(eventName, payload, context) {
         switch (eventName) {
             case 'issues':
                 if (payload.action === 'opened') {
@@ -322,16 +377,56 @@ class Moderator {
                 break;
             case 'issue_comment':
                 if (payload.action === 'created') {
-                    return `Comment: ${payload.comment.body}`;
+                    return await this.extractCommentContent(payload, context, false);
                 }
                 break;
             case 'pull_request_review_comment':
                 if (payload.action === 'created') {
-                    return `Review Comment: ${payload.comment.body}`;
+                    return await this.extractCommentContent(payload, context, true);
                 }
                 break;
         }
         return null;
+    }
+    async extractCommentContent(payload, context, isPullRequestComment) {
+        const { owner, repo } = context.repo;
+        let contextContent = '';
+        try {
+            // Get parent issue/PR context
+            if (isPullRequestComment && payload.pull_request) {
+                const pr = await this.githubClient.getPullRequest(owner, repo, payload.pull_request.number);
+                contextContent += `PR Title: ${pr.title}\nPR Body: ${pr.body || ''}\n\n`;
+                // Get recent comments for this PR
+                const recentComments = await this.githubClient.getRecentComments(owner, repo, payload.pull_request.number, 3);
+                if (recentComments.length > 0) {
+                    contextContent += `Recent Comments:\n`;
+                    recentComments.forEach((comment, index) => {
+                        contextContent += `${index + 1}. @${comment.user}: ${comment.body}\n`;
+                    });
+                    contextContent += '\n';
+                }
+            }
+            else if (!isPullRequestComment && payload.issue) {
+                const issue = await this.githubClient.getIssue(owner, repo, payload.issue.number);
+                contextContent += `Issue Title: ${issue.title}\nIssue Body: ${issue.body || ''}\n\n`;
+                // Get recent comments for this issue
+                const recentComments = await this.githubClient.getRecentComments(owner, repo, payload.issue.number, 3);
+                if (recentComments.length > 0) {
+                    contextContent += `Recent Comments:\n`;
+                    recentComments.forEach((comment, index) => {
+                        contextContent += `${index + 1}. @${comment.user}: ${comment.body}\n`;
+                    });
+                    contextContent += '\n';
+                }
+            }
+        }
+        catch (error) {
+            core.warning(`Failed to fetch additional context: ${error}`);
+        }
+        // Add the new comment being moderated
+        const commentType = isPullRequestComment ? 'Review Comment' : 'Comment';
+        contextContent += `New ${commentType}: ${payload.comment.body}`;
+        return contextContent;
     }
     async getCommunityContext(context) {
         const { owner, repo } = context.repo;
