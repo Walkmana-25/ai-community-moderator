@@ -1,31 +1,31 @@
-name: 'AI Community Moderator'
-description: 'AI-powered community moderator that enforces guidelines and code of conduct'
-author: 'Ben Balter'
+name: "AI Community Moderator"
+description: "AI-powered community moderator that enforces guidelines and code of conduct"
+author: "Ben Balter"
 branding:
-  icon: 'shield'
-  color: 'blue'
+  icon: "shield"
+  color: "blue"
 inputs:
   github-token:
-    description: 'GitHub token for API access and GitHub Models authentication'
+    description: "GitHub token for API access and GitHub Models authentication"
     required: true
     default: ${{ github.token }}
   openai-base-url:
-    description: 'GitHub Models base URL'
+    description: "GitHub Models base URL"
     required: false
-    default: 'https://models.github.ai/inference'
+    default: "https://models.github.ai/inference"
   model:
-    description: 'AI model to use for moderation'
+    description: "AI model to use for moderation"
     required: false
-    default: 'openai/gpt-4.1'
+    default: "openai/gpt-4.1"
   severity-threshold:
-    description: 'Severity threshold for taking action (1-10)'
+    description: "Severity threshold for taking action (1-10)"
     required: false
-    default: '5'
+    default: "5"
 outputs:
   action-taken:
-    description: 'Type of moderation action taken'
+    description: "Type of moderation action taken"
   reason:
-    description: 'Reason for the moderation action'
+    description: "Reason for the moderation action"
 runs:
-  using: 'node20'
-  main: 'dist/index.js'
+  using: "node20"
+  main: "dist/index.js"

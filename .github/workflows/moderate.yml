@@ -1,6 +1,14 @@
+---
 name: AI Community Moderator
 
-on:
+permissions:
+  contents: read # To read community health files
+  issues: write # To comment on and lock issues
+  pull-requests: write # To comment on and lock PRs
+  discussions: write # To moderate discussions (if used)
+  models: read # To access GitHub Models for AI inference
+
+"on":
   issues:
     types: [opened]
   pull_request:
@@ -21,7 +29,7 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-        
+
       - name: Moderate with AI
         uses: ./
         with:

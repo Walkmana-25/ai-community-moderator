@@ -1,4 +1,4 @@
-import { ModerationDecision } from './moderator';
+import { ModerationDecision } from "./moderator";
 export declare class OpenAIClient {
     private client;
     constructor(apiKey: string, baseURL: string);

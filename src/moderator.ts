@@ -1,7 +1,7 @@
-import { Context } from '@actions/github/lib/context';
-import { GitHubClient } from './github-client';
-import { OpenAIClient } from './openai-client';
-import * as core from '@actions/core';
+import { Context } from "@actions/github/lib/context";
+import { GitHubClient } from "./github-client";
+import { OpenAIClient } from "./openai-client";
+import * as core from "@actions/core";
 
 export interface ModeratorConfig {
   githubToken: string;
@@ -18,7 +18,7 @@ export interface ModerationResult {
 
 export interface ModerationDecision {
   shouldTakeAction: boolean;
-  actionType: 'comment' | 'hide' | 'lock' | 'suggest' | 'none';
+  actionType: "comment" | "hide" | "lock" | "suggest" | "none";
   severity: number;
   reason: string;
   response?: string;
@@ -32,63 +32,80 @@ export class Moderator {
   constructor(config: ModeratorConfig) {
     this.config = config;
     this.githubClient = new GitHubClient(config.githubToken);
-    this.openaiClient = new OpenAIClient(config.openaiApiKey, config.openaiBaseUrl);
+    this.openaiClient = new OpenAIClient(
+      config.openaiApiKey,
+      config.openaiBaseUrl,
+    );
   }
 
   async processEvent(context: Context): Promise<ModerationResult> {
     const { eventName, payload } = context;
-    
+
     core.info(`Processing event: ${eventName}`);
-    
+
     // Extract content to moderate based on event type
-    const contentToModerate = await this.extractContent(eventName, payload, context);
+    const contentToModerate = await this.extractContent(
+      eventName,
+      payload,
+      context,
+    );
     if (!contentToModerate) {
-      return { actionTaken: 'none', reason: 'No content to moderate' };
+      return { actionTaken: "none", reason: "No content to moderate" };
     }
 
     // Get community health files for context
     const communityContext = await this.getCommunityContext(context);
-    
+
     // Get moderation decision from AI
-    const decision = await this.getModerationDecision(contentToModerate, communityContext);
-    
+    const decision = await this.getModerationDecision(
+      contentToModerate,
+      communityContext,
+    );
+
     // Take action if needed
-    if (decision.shouldTakeAction && decision.severity >= this.config.severityThreshold) {
+    if (
+      decision.shouldTakeAction &&
+      decision.severity >= this.config.severityThreshold
+    ) {
       return await this.takeAction(context, decision);
     }
-    
-    return { actionTaken: 'none', reason: 'Content deemed acceptable' };
+
+    return { actionTaken: "none", reason: "Content deemed acceptable" };
   }
 
-  private async extractContent(eventName: string, payload: any, context: Context): Promise<string | null> {
+  private async extractContent(
+    eventName: string,
+    payload: any,
+    context: Context,
+  ): Promise<string | null> {
     switch (eventName) {
-      case 'issues':
-        if (payload.action === 'opened') {
-          return `Issue Title: ${payload.issue.title}\nIssue Body: ${payload.issue.body || ''}`;
+      case "issues":
+        if (payload.action === "opened") {
+          return `Issue Title: ${payload.issue.title}\nIssue Body: ${payload.issue.body || ""}`;
         }
         break;
-      case 'pull_request':
-        if (payload.action === 'opened') {
-          return `PR Title: ${payload.pull_request.title}\nPR Body: ${payload.pull_request.body || ''}`;
+      case "pull_request":
+        if (payload.action === "opened") {
+          return `PR Title: ${payload.pull_request.title}\nPR Body: ${payload.pull_request.body || ""}`;
         }
         break;
-      case 'issue_comment':
-        if (payload.action === 'created') {
+      case "issue_comment":
+        if (payload.action === "created") {
           return await this.extractCommentContent(payload, context, false);
         }
         break;
-      case 'pull_request_review_comment':
-        if (payload.action === 'created') {
+      case "pull_request_review_comment":
+        if (payload.action === "created") {
           return await this.extractCommentContent(payload, context, true);
         }
         break;
-      case 'discussion':
-        if (payload.action === 'created') {
-          return `Discussion Title: ${payload.discussion.title}\nDiscussion Body: ${payload.discussion.body || ''}`;
+      case "discussion":
+        if (payload.action === "created") {
+          return `Discussion Title: ${payload.discussion.title}\nDiscussion Body: ${payload.discussion.body || ""}`;
         }
         break;
-      case 'discussion_comment':
-        if (payload.action === 'created') {
+      case "discussion_comment":
+        if (payload.action === "created") {
           return await this.extractDiscussionCommentContent(payload, context);
         }
         break;
@@ -96,37 +113,59 @@ export class Moderator {
     return null;
   }
 
-  private async extractCommentContent(payload: any, context: Context, isPullRequestComment: boolean): Promise<string> {
+  private async extractCommentContent(
+    payload: any,
+    context: Context,
+    isPullRequestComment: boolean,
+  ): Promise<string> {
     const { owner, repo } = context.repo;
-    let contextContent = '';
+    let contextContent = "";
 
     try {
       // Get parent issue/PR context
       if (isPullRequestComment && payload.pull_request) {
-        const pr = await this.githubClient.getPullRequest(owner, repo, payload.pull_request.number);
-        contextContent += `PR Title: ${pr.title}\nPR Body: ${pr.body || ''}\n\n`;
-        
+        const pr = await this.githubClient.getPullRequest(
+          owner,
+          repo,
+          payload.pull_request.number,
+        );
+        contextContent += `PR Title: ${pr.title}\nPR Body: ${pr.body || ""}\n\n`;
+
         // Get recent comments for this PR
-        const recentComments = await this.githubClient.getRecentComments(owner, repo, payload.pull_request.number, 3);
+        const recentComments = await this.githubClient.getRecentComments(
+          owner,
+          repo,
+          payload.pull_request.number,
+          3,
+        );
         if (recentComments.length > 0) {
           contextContent += `Recent Comments:\n`;
           recentComments.forEach((comment, index) => {
             contextContent += `${index + 1}. @${comment.user}: ${comment.body}\n`;
           });
-          contextContent += '\n';
+          contextContent += "\n";
         }
       } else if (!isPullRequestComment && payload.issue) {
-        const issue = await this.githubClient.getIssue(owner, repo, payload.issue.number);
-        contextContent += `Issue Title: ${issue.title}\nIssue Body: ${issue.body || ''}\n\n`;
-        
+        const issue = await this.githubClient.getIssue(
+          owner,
+          repo,
+          payload.issue.number,
+        );
+        contextContent += `Issue Title: ${issue.title}\nIssue Body: ${issue.body || ""}\n\n`;
+
         // Get recent comments for this issue
-        const recentComments = await this.githubClient.getRecentComments(owner, repo, payload.issue.number, 3);
+        const recentComments = await this.githubClient.getRecentComments(
+          owner,
+          repo,
+          payload.issue.number,
+          3,
+        );
         if (recentComments.length > 0) {
           contextContent += `Recent Comments:\n`;
           recentComments.forEach((comment, index) => {
             contextContent += `${index + 1}. @${comment.user}: ${comment.body}\n`;
           });
-          contextContent += '\n';
+          contextContent += "\n";
         }
       }
     } catch (error) {
@@ -134,29 +173,38 @@ export class Moderator {
     }
 
     // Add the new comment being moderated
-    const commentType = isPullRequestComment ? 'Review Comment' : 'Comment';
+    const commentType = isPullRequestComment ? "Review Comment" : "Comment";
     contextContent += `New ${commentType}: ${payload.comment.body}`;
 
     return contextContent;
   }
 
-  private async extractDiscussionCommentContent(payload: any, _context: Context): Promise<string> {
-    let contextContent = '';
+  private async extractDiscussionCommentContent(
+    payload: any,
+    _context: Context,
+  ): Promise<string> {
+    let contextContent = "";
 
     try {
       // Get parent discussion context
       if (payload.discussion && payload.discussion.node_id) {
-        const discussion = await this.githubClient.getDiscussion(payload.discussion.node_id);
-        contextContent += `Discussion Title: ${discussion.title}\nDiscussion Body: ${discussion.body || ''}\n\n`;
-        
+        const discussion = await this.githubClient.getDiscussion(
+          payload.discussion.node_id,
+        );
+        contextContent += `Discussion Title: ${discussion.title}\nDiscussion Body: ${discussion.body || ""}\n\n`;
+
         // Get recent comments for this discussion
-        const recentComments = await this.githubClient.getRecentDiscussionComments(payload.discussion.node_id, 3);
+        const recentComments =
+          await this.githubClient.getRecentDiscussionComments(
+            payload.discussion.node_id,
+            3,
+          );
         if (recentComments.length > 0) {
           contextContent += `Recent Comments:\n`;
           recentComments.forEach((comment, index) => {
             contextContent += `${index + 1}. @${comment.user}: ${comment.body}\n`;
           });
-          contextContent += '\n';
+          contextContent += "\n";
         }
       }
     } catch (error) {
@@ -171,60 +219,75 @@ export class Moderator {
 
   private async getCommunityContext(context: Context): Promise<string> {
     const { owner, repo } = context.repo;
-    let communityContext = '';
+    let communityContext = "";
 
     try {
       // Try to get contributing guidelines
-      const contributing = await this.githubClient.getFileContent(owner, repo, '.github/CONTRIBUTING.md')
-        .catch(() => this.githubClient.getFileContent(owner, repo, 'CONTRIBUTING.md'))
+      const contributing = await this.githubClient
+        .getFileContent(owner, repo, ".github/CONTRIBUTING.md")
+        .catch(() =>
+          this.githubClient.getFileContent(owner, repo, "CONTRIBUTING.md"),
+        )
         .catch(() => null);
-      
+
       if (contributing) {
         communityContext += `Contributing Guidelines:\n${contributing}\n\n`;
       }
 
       // Try to get code of conduct
-      const codeOfConduct = await this.githubClient.getFileContent(owner, repo, '.github/CODE_OF_CONDUCT.md')
-        .catch(() => this.githubClient.getFileContent(owner, repo, 'CODE_OF_CONDUCT.md'))
+      const codeOfConduct = await this.githubClient
+        .getFileContent(owner, repo, ".github/CODE_OF_CONDUCT.md")
+        .catch(() =>
+          this.githubClient.getFileContent(owner, repo, "CODE_OF_CONDUCT.md"),
+        )
         .catch(() => null);
-      
+
       if (codeOfConduct) {
         communityContext += `Code of Conduct:\n${codeOfConduct}\n\n`;
       }
 
       // Try to get issue template
-      const issueTemplate = await this.githubClient.getFileContent(owner, repo, '.github/ISSUE_TEMPLATE.md')
+      const issueTemplate = await this.githubClient
+        .getFileContent(owner, repo, ".github/ISSUE_TEMPLATE.md")
         .catch(() => null);
-      
+
       if (issueTemplate) {
         communityContext += `Issue Template:\n${issueTemplate}\n\n`;
       }
-
     } catch (error) {
       core.warning(`Failed to fetch community files: ${error}`);
     }
 
-    return communityContext || 'No specific community guidelines found.';
+    return communityContext || "No specific community guidelines found.";
   }
 
-  private async getModerationDecision(content: string, communityContext: string): Promise<ModerationDecision> {
+  private async getModerationDecision(
+    content: string,
+    communityContext: string,
+  ): Promise<ModerationDecision> {
     const prompt = this.buildModerationPrompt(content, communityContext);
-    
+
     try {
-      const decision = await this.openaiClient.getModeration(prompt, this.config.model);
+      const decision = await this.openaiClient.getModeration(
+        prompt,
+        this.config.model,
+      );
       return decision;
     } catch (error) {
       core.warning(`AI moderation failed: ${error}`);
       return {
         shouldTakeAction: false,
-        actionType: 'none',
+        actionType: "none",
         severity: 0,
-        reason: 'AI moderation unavailable'
+        reason: "AI moderation unavailable",
       };
     }
   }
 
-  private buildModerationPrompt(content: string, communityContext: string): string {
+  private buildModerationPrompt(
+    content: string,
+    communityContext: string,
+  ): string {
     return `You are a skilled community moderator for a GitHub repository. Your role is to review content and enforce community guidelines while being helpful and polite.
 
 Community Guidelines:
@@ -251,46 +314,61 @@ Guidelines for your evaluation:
 Respond only with valid JSON.`;
   }
 
-  private async takeAction(context: Context, decision: ModerationDecision): Promise<ModerationResult> {
+  private async takeAction(
+    context: Context,
+    decision: ModerationDecision,
+  ): Promise<ModerationResult> {
     const { eventName, payload } = context;
     const { owner, repo } = context.repo;
 
     try {
       switch (decision.actionType) {
-        case 'comment':
+        case "comment":
           if (decision.response) {
             await this.postComment(context, decision.response);
-            return { actionTaken: 'comment', reason: decision.reason };
+            return { actionTaken: "comment", reason: decision.reason };
           }
           break;
-          
-        case 'hide':
-          if ((eventName === 'issue_comment' || eventName === 'pull_request_review_comment') && payload.comment) {
+
+        case "hide":
+          if (
+            (eventName === "issue_comment" ||
+              eventName === "pull_request_review_comment") &&
+            payload.comment
+          ) {
             await this.githubClient.hideComment(payload.comment.node_id);
-            return { actionTaken: 'hide', reason: decision.reason };
-          } else if (eventName === 'discussion_comment' && payload.comment) {
+            return { actionTaken: "hide", reason: decision.reason };
+          } else if (eventName === "discussion_comment" && payload.comment) {
             await this.githubClient.hideComment(payload.comment.node_id);
-            return { actionTaken: 'hide', reason: decision.reason };
+            return { actionTaken: "hide", reason: decision.reason };
           }
           break;
-          
-        case 'lock':
-          if (eventName === 'issues' && payload.issue) {
-            await this.githubClient.lockIssue(owner, repo, payload.issue.number);
-            return { actionTaken: 'lock', reason: decision.reason };
-          } else if (eventName === 'pull_request' && payload.pull_request) {
-            await this.githubClient.lockPullRequest(owner, repo, payload.pull_request.number);
-            return { actionTaken: 'lock', reason: decision.reason };
-          } else if (eventName === 'discussion' && payload.discussion) {
+
+        case "lock":
+          if (eventName === "issues" && payload.issue) {
+            await this.githubClient.lockIssue(
+              owner,
+              repo,
+              payload.issue.number,
+            );
+            return { actionTaken: "lock", reason: decision.reason };
+          } else if (eventName === "pull_request" && payload.pull_request) {
+            await this.githubClient.lockPullRequest(
+              owner,
+              repo,
+              payload.pull_request.number,
+            );
+            return { actionTaken: "lock", reason: decision.reason };
+          } else if (eventName === "discussion" && payload.discussion) {
             await this.githubClient.lockDiscussion(payload.discussion.node_id);
-            return { actionTaken: 'lock', reason: decision.reason };
+            return { actionTaken: "lock", reason: decision.reason };
           }
           break;
-          
-        case 'suggest':
+
+        case "suggest":
           if (decision.response) {
             await this.postComment(context, decision.response);
-            return { actionTaken: 'suggest', reason: decision.reason };
+            return { actionTaken: "suggest", reason: decision.reason };
           }
           break;
       }
@@ -298,23 +376,44 @@ Respond only with valid JSON.`;
       core.warning(`Failed to take action: ${error}`);
     }
 
-    return { actionTaken: 'none', reason: 'Action could not be completed' };
+    return { actionTaken: "none", reason: "Action could not be completed" };
   }
 
   private async postComment(context: Context, comment: string): Promise<void> {
     const { eventName, payload } = context;
     const { owner, repo } = context.repo;
 
-    if (eventName === 'issues' && payload.issue) {
-      await this.githubClient.createIssueComment(owner, repo, payload.issue.number, comment);
-    } else if (eventName === 'pull_request' && payload.pull_request) {
-      await this.githubClient.createPullRequestComment(owner, repo, payload.pull_request.number, comment);
-    } else if (eventName === 'issue_comment' && payload.issue) {
-      await this.githubClient.createIssueComment(owner, repo, payload.issue.number, comment);
-    } else if (eventName === 'discussion' && payload.discussion) {
-      await this.githubClient.createDiscussionComment(payload.discussion.node_id, comment);
-    } else if (eventName === 'discussion_comment' && payload.discussion) {
-      await this.githubClient.createDiscussionComment(payload.discussion.node_id, comment);
+    if (eventName === "issues" && payload.issue) {
+      await this.githubClient.createIssueComment(
+        owner,
+        repo,
+        payload.issue.number,
+        comment,
+      );
+    } else if (eventName === "pull_request" && payload.pull_request) {
+      await this.githubClient.createPullRequestComment(
+        owner,
+        repo,
+        payload.pull_request.number,
+        comment,
+      );
+    } else if (eventName === "issue_comment" && payload.issue) {
+      await this.githubClient.createIssueComment(
+        owner,
+        repo,
+        payload.issue.number,
+        comment,
+      );
+    } else if (eventName === "discussion" && payload.discussion) {
+      await this.githubClient.createDiscussionComment(
+        payload.discussion.node_id,
+        comment,
+      );
+    } else if (eventName === "discussion_comment" && payload.discussion) {
+      await this.githubClient.createDiscussionComment(
+        payload.discussion.node_id,
+        comment,
+      );
     }
   }
 }

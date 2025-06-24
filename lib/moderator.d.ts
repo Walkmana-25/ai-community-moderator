@@ -1,4 +1,4 @@
-import { Context } from '@actions/github/lib/context';
+import { Context } from "@actions/github/lib/context";
 export interface ModeratorConfig {
     githubToken: string;
     openaiApiKey: string;
@@ -12,7 +12,7 @@ export interface ModerationResult {
 }
 export interface ModerationDecision {
     shouldTakeAction: boolean;
-    actionType: 'comment' | 'hide' | 'lock' | 'suggest' | 'none';
+    actionType: "comment" | "hide" | "lock" | "suggest" | "none";
     severity: number;
     reason: string;
     response?: string;

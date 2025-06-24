@@ -1,0 +1,11 @@
+# YAML linting configuration
+rules:
+  # Allow longer line lengths for GitHub Actions workflows
+  line-length:
+    max: 120
+
+  # Allow comments to be indented differently than surrounding code
+  comments-indentation: disable
+
+  # Allow empty documents (common in GitHub Actions)
+  document-start: disable

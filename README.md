@@ -89,8 +89,8 @@ The action works out of the box with default settings, but you can customize its
 - uses: benbalter/ai-community-moderator@v1
   with:
     github-token: ${{ secrets.GITHUB_TOKEN }}
-    severity-threshold: 5  # Adjust sensitivity (1-10)
-    model: openai/gpt-4.1  # Choose AI model
+    severity-threshold: 5 # Adjust sensitivity (1-10)
+    model: openai/gpt-4.1 # Choose AI model
 ```
 
 ## How it Works
@@ -110,8 +110,9 @@ The AI Community Moderator follows this process for each community interaction:
 ### AI Decision Process
 
 The AI evaluates content based on:
+
 - **Community Guidelines**: Your repository's contributing guidelines and code of conduct
-- **Context**: Conversation history and interaction patterns  
+- **Context**: Conversation history and interaction patterns
 - **Tone and Intent**: Whether content is constructive or harmful
 - **Policy Violations**: Spam, harassment, off-topic content, etc.
 
@@ -129,6 +130,7 @@ The `severity-threshold` input controls when actions are taken. The AI rates con
 - **9-10**: Severe violations, may require locking or limiting interactions
 
 **Examples:**
+
 - `severity-threshold: 3` = Strict moderation (takes action on minor issues)
 - `severity-threshold: 5` = Balanced moderation (default)
 - `severity-threshold: 8` = Lenient moderation (only acts on severe issues)
@@ -138,11 +140,13 @@ The `severity-threshold` input controls when actions are taken. The AI rates con
 This action uses GitHub Models for AI inference with automatic authentication:
 
 **Requirements:**
+
 1. Repository must have access to GitHub Models
 2. Workflow must include `models: read` permission
 3. Uses GitHub token for authentication with `https://models.github.ai/inference`
 
 **Supported Models:**
+
 - `openai/gpt-4.1` (default) - Most capable, slower
 - `openai/gpt-3.5-turbo` - Faster, less capable
 - Other OpenAI-compatible models supported by GitHub Models
@@ -182,6 +186,7 @@ For repositories requiring tight community standards (e.g., educational, corpora
 ```
 
 This configuration will:
+
 - Take action on minor infractions
 - Provide more educational guidance
 - Maintain stricter community standards
@@ -198,6 +203,7 @@ For open-source projects with more relaxed community standards:
 ```
 
 This configuration will:
+
 - Only act on severe violations
 - Allow more casual discussion
 - Focus on obvious policy violations
@@ -244,27 +250,32 @@ jobs:
 
 The AI can take several types of actions based on the content analysis:
 
-### 1. **Comment** 
+### 1. **Comment**
+
 - **When**: Educational opportunities or minor guideline clarifications needed
 - **Action**: Posts a helpful, educational comment explaining community standards
 - **Example**: "Thanks for your contribution! To help maintain our community standards, please consider..."
 
 ### 2. **Suggest**
+
 - **When**: Content needs improvement but shows good intent
 - **Action**: Provides constructive suggestions for improvement
 - **Example**: Suggesting better formatting, clearer communication, or additional context
 
 ### 3. **Hide**
+
 - **When**: Content violates community standards significantly
 - **Action**: Hides inappropriate comments from public view
 - **Note**: Requires repository admin permissions
 
 ### 4. **Lock**
+
 - **When**: Discussions become unproductive or heated
 - **Action**: Locks issues, PRs, or discussions to prevent further comments
 - **Note**: Can be unlocked manually by maintainers
 
 ### 5. **None**
+
 - **When**: Content meets community standards
 - **Action**: No action taken, normal processing continues
 
@@ -274,11 +285,11 @@ The action requires the following GitHub permissions:
 
 ```yaml
 permissions:
-  contents: read        # To read community health files
-  issues: write         # To comment on and lock issues
-  pull-requests: write  # To comment on and lock PRs
-  discussions: write    # To moderate discussions (if used)
-  models: read          # To access GitHub Models for AI inference
+  contents: read # To read community health files
+  issues: write # To comment on and lock issues
+  pull-requests: write # To comment on and lock PRs
+  discussions: write # To moderate discussions (if used)
+  models: read # To access GitHub Models for AI inference
 ```
 
 ### Permission Details
@@ -315,19 +326,19 @@ The action automatically detects and uses community health files to provide cont
 
 ### Inputs
 
-| Input | Description | Required | Default |
-|-------|-------------|----------|---------|
-| `github-token` | GitHub token for API access and GitHub Models authentication | Yes | `${{ github.token }}` |
-| `openai-base-url` | GitHub Models base URL | No | `https://models.github.ai/inference` |
-| `model` | AI model to use for moderation | No | `openai/gpt-4.1` |
-| `severity-threshold` | Severity threshold for taking action (1-10) | No | `5` |
+| Input                | Description                                                  | Required | Default                              |
+| -------------------- | ------------------------------------------------------------ | -------- | ------------------------------------ |
+| `github-token`       | GitHub token for API access and GitHub Models authentication | Yes      | `${{ github.token }}`                |
+| `openai-base-url`    | GitHub Models base URL                                       | No       | `https://models.github.ai/inference` |
+| `model`              | AI model to use for moderation                               | No       | `openai/gpt-4.1`                     |
+| `severity-threshold` | Severity threshold for taking action (1-10)                  | No       | `5`                                  |
 
 ### Outputs
 
-| Output | Description | Example |
-|--------|-------------|---------|
-| `action-taken` | Type of moderation action taken | `comment`, `hide`, `lock`, `suggest`, `none` |
-| `reason` | Reason for the moderation action | `"Content violates community guidelines regarding respectful communication"` |
+| Output         | Description                      | Example                                                                      |
+| -------------- | -------------------------------- | ---------------------------------------------------------------------------- |
+| `action-taken` | Type of moderation action taken  | `comment`, `hide`, `lock`, `suggest`, `none`                                 |
+| `reason`       | Reason for the moderation action | `"Content violates community guidelines regarding respectful communication"` |
 
 ### Using Outputs
 
@@ -348,30 +359,38 @@ The action automatically detects and uses community health files to provide cont
 ### Common Issues
 
 #### "GitHub Models access denied"
+
 **Problem**: Action fails with authentication or access errors
 **Solutions**:
+
 1. Verify `models: read` permission is included in workflow
 2. Ensure repository has GitHub Models access
 3. Check that `github-token` input is correctly set
 4. Verify token has necessary scopes
 
 #### "No action taken on obvious violations"
+
 **Problem**: AI doesn't moderate content that should be flagged
 **Solutions**:
+
 1. Lower the `severity-threshold` (try 3-4 instead of 5)
 2. Add or update community health files for better context
 3. Check if content type is supported (issues, PRs, comments, discussions)
 
 #### "Too many false positives"
+
 **Problem**: AI flags appropriate content as violations
 **Solutions**:
+
 1. Increase the `severity-threshold` (try 7-8 instead of 5)
 2. Review and refine community health files
 3. Consider using a different model
 
 #### Action timeout or slow response
+
 **Problem**: Action takes too long or times out
 **Solutions**:
+
 1. Switch to a faster model like `openai/gpt-3.5-turbo`
 2. Check GitHub Models service status
 3. Reduce context by limiting community health file size
@@ -438,28 +457,34 @@ A: No, the action requires GitHub Models for AI inference capabilities.
 ## Security Considerations
 
 ### Data Privacy
+
 - **Content Analysis**: Only public content and community health files are analyzed
 - **No Sensitive Data**: Private repository contents, secrets, and personal information are not accessed
 - **GitHub Models**: Content is processed through GitHub's managed AI service with their privacy protections
 
 ### Access Control
+
 - **Minimal Permissions**: Action requests only necessary permissions for operation
 - **GitHub Token**: Uses your repository's GitHub token, not external API keys
 - **Scope Limitation**: Cannot access resources outside the configured permissions
 
 ### Action Security
+
 - **Source Code**: Open source and auditable
 - **Dependency Management**: Regular security updates for dependencies
 - **Signed Releases**: Future releases will be signed for integrity verification
 
 ### Best Practices
+
 1. **Review Permissions**: Only grant necessary permissions to the workflow
 2. **Monitor Actions**: Regularly review action logs and decisions
 3. **Community Health**: Keep community guidelines up to date and specific
 4. **Incident Response**: Have a plan for handling false positives or negatives
 
 ### Reporting Security Issues
+
 If you discover a security vulnerability, please report it responsibly:
+
 1. **Don't** open a public issue
 2. **Do** email security concerns to the maintainer
 3. **Include** detailed reproduction steps and potential impact
@@ -467,29 +492,34 @@ If you discover a security vulnerability, please report it responsibly:
 ## Limitations
 
 ### Technical Limitations
+
 - **Rate Limits**: Subject to GitHub API and GitHub Models rate limits
 - **Processing Time**: AI analysis adds latency to comment posting
 - **Language Support**: Most effective with English content
 - **Context Size**: Limited by AI model context window (~8K tokens)
 
 ### Moderation Limitations
+
 - **Not Perfect**: AI may miss subtle violations or flag appropriate content
 - **Context Dependent**: Effectiveness depends on quality of community health files
 - **Cultural Nuance**: May not understand all cultural contexts or humor
 - **Evolving Standards**: Community standards may change faster than AI understanding
 
 ### Functional Limitations
+
 - **Retroactive Moderation**: Only processes new content, not existing content
 - **Edit Detection**: Limited support for content edits (depends on workflow triggers)
 - **Complex Violations**: May struggle with complex, multi-message violations
 - **Appeals Process**: No built-in appeals or review process
 
 ### Scope Limitations
+
 - **Repository Only**: Cannot moderate across multiple repositories
 - **Public Content**: Primarily designed for public community interactions
 - **GitHub Features**: Limited to GitHub's supported interaction types
 
 ### Recommendations
+
 1. **Human Oversight**: Always maintain human moderator involvement
 2. **Regular Review**: Periodically review AI decisions and adjust thresholds
 3. **Clear Guidelines**: Maintain clear, specific community health documents
@@ -530,11 +560,13 @@ npm run package
 We welcome contributions to improve the AI Community Moderator! Here are ways you can help:
 
 ### Quick Links
+
 - [Contributing Guidelines](.github/CONTRIBUTING.md) - Detailed contribution instructions
 - [Issue Tracker](../../issues) - Report bugs or suggest features
 - [Discussions](../../discussions) - Ask questions or discuss ideas
 
 ### Getting Started
+
 1. **Fork** the repository
 2. **Clone** your fork locally
 3. **Install** dependencies: `npm install`
@@ -542,12 +574,14 @@ We welcome contributions to improve the AI Community Moderator! Here are ways yo
 5. **Test** your changes: `npm test`
 
 ### Development Workflow
+
 1. Create a feature branch from `main`
 2. Make your changes with tests
 3. Run the full test suite: `npm run all`
 4. Submit a pull request with clear description
 
 ### Areas for Contribution
+
 - **Documentation**: Improve clarity, add examples, fix typos
 - **Testing**: Add test cases, improve coverage
 - **Features**: New moderation actions, better AI prompts

@@ -47,7 +47,7 @@ class GitHubClient {
     constructor(token) {
         this.octokit = new rest_1.Octokit({
             auth: token,
-            userAgent: 'ai-community-moderator'
+            userAgent: "ai-community-moderator",
         });
     }
     async getFileContent(owner, repo, path) {
@@ -55,12 +55,12 @@ class GitHubClient {
             const response = await this.octokit.rest.repos.getContent({
                 owner,
                 repo,
-                path
+                path,
             });
-            if ('content' in response.data && response.data.content) {
-                return Buffer.from(response.data.content, 'base64').toString('utf-8');
+            if ("content" in response.data && response.data.content) {
+                return Buffer.from(response.data.content, "base64").toString("utf-8");
             }
-            throw new Error('File content not found');
+            throw new Error("File content not found");
         }
         catch (error) {
             core.debug(`Failed to get file ${path}: ${error}`);
@@ -73,7 +73,7 @@ class GitHubClient {
                 owner,
                 repo,
                 issue_number: issueNumber,
-                body
+                body,
             });
             core.info(`Posted comment on issue #${issueNumber}`);
         }
@@ -88,7 +88,7 @@ class GitHubClient {
                 owner,
                 repo,
                 issue_number: pullNumber,
-                body
+                body,
             });
             core.info(`Posted comment on PR #${pullNumber}`);
         }
@@ -121,7 +121,7 @@ class GitHubClient {
                 owner,
                 repo,
                 issue_number: issueNumber,
-                lock_reason: 'spam'
+                lock_reason: "spam",
             });
             core.info(`Locked issue #${issueNumber}`);
         }
@@ -136,7 +136,7 @@ class GitHubClient {
                 owner,
                 repo,
                 issue_number: pullNumber,
-                lock_reason: 'spam'
+                lock_reason: "spam",
             });
             core.info(`Locked PR #${pullNumber}`);
         }
@@ -151,7 +151,7 @@ class GitHubClient {
                 owner,
                 repo,
                 limit,
-                expiry: 'one_day'
+                expiry: "one_day",
             });
             core.info(`Limited interactions for repository to ${limit}`);
         }
@@ -173,7 +173,7 @@ class GitHubClient {
         }
       `, {
                 discussionId: discussionNodeId,
-                body
+                body,
             });
             core.info(`Posted comment on discussion with node ID: ${discussionNodeId}`);
         }
@@ -206,11 +206,11 @@ class GitHubClient {
             const response = await this.octokit.rest.issues.get({
                 owner,
                 repo,
-                issue_number: issueNumber
+                issue_number: issueNumber,
             });
             return {
                 title: response.data.title,
-                body: response.data.body || null
+                body: response.data.body || null,
             };
         }
         catch (error) {
@@ -223,11 +223,11 @@ class GitHubClient {
             const response = await this.octokit.rest.pulls.get({
                 owner,
                 repo,
-                pull_number: pullNumber
+                pull_number: pullNumber,
             });
             return {
                 title: response.data.title,
-                body: response.data.body || null
+                body: response.data.body || null,
             };
         }
         catch (error) {
@@ -241,15 +241,17 @@ class GitHubClient {
                 owner,
                 repo,
                 issue_number: issueNumber,
-                sort: 'created',
-                direction: 'desc',
-                per_page: limit
+                sort: "created",
+                direction: "desc",
+                per_page: limit,
             });
-            return response.data.map(comment => ({
-                body: comment.body || '',
+            return response.data
+                .map((comment) => ({
+                body: comment.body || "",
                 created_at: comment.created_at,
-                user: comment.user?.login || 'unknown'
-            })).reverse(); // Reverse to get chronological order (oldest first)
+                user: comment.user?.login || "unknown",
+            }))
+                .reverse(); // Reverse to get chronological order (oldest first)
         }
         catch (error) {
             core.debug(`Failed to get recent comments for issue ${issueNumber}: ${error}`);
@@ -271,7 +273,7 @@ class GitHubClient {
             const discussion = result.node;
             return {
                 title: discussion.title,
-                body: discussion.body || null
+                body: discussion.body || null,
             };
         }
         catch (error) {
@@ -300,9 +302,9 @@ class GitHubClient {
       `, { discussionId: discussionNodeId, limit });
             const discussion = result.node;
             return discussion.comments.nodes.map((comment) => ({
-                body: comment.body || '',
+                body: comment.body || "",
                 created_at: comment.createdAt,
-                user: comment.author?.login || 'unknown'
+                user: comment.author?.login || "unknown",
             }));
         }
         catch (error) {
@@ -362,27 +364,27 @@ const moderator_1 = __nccwpck_require__(3967);
 async function run() {
     try {
         // Get inputs
-        const token = core.getInput('github-token', { required: true });
-        const openaiBaseUrl = core.getInput('openai-base-url') || 'https://models.github.ai/inference';
-        const model = core.getInput('model') || 'openai/gpt-4.1';
-        const severityThreshold = parseInt(core.getInput('severity-threshold') || '5', 10);
+        const token = core.getInput("github-token", { required: true });
+        const openaiBaseUrl = core.getInput("openai-base-url") || "https://models.github.ai/inference";
+        const model = core.getInput("model") || "openai/gpt-4.1";
+        const severityThreshold = parseInt(core.getInput("severity-threshold") || "5", 10);
         // Initialize moderator
         const moderator = new moderator_1.Moderator({
             githubToken: token,
             openaiApiKey: token, // Use GitHub token for GitHub Models authentication
             openaiBaseUrl,
             model,
-            severityThreshold
+            severityThreshold,
         });
         // Get event context
         const context = github.context;
         // Process the event
         const result = await moderator.processEvent(context);
         // Set outputs
-        core.setOutput('action-taken', result.actionTaken);
-        core.setOutput('reason', result.reason);
+        core.setOutput("action-taken", result.actionTaken);
+        core.setOutput("reason", result.reason);
         // Use warning if action was taken, info if no action was taken
-        if (result.actionTaken !== 'none') {
+        if (result.actionTaken !== "none") {
             core.warning(`Moderation action taken: ${result.actionTaken} - ${result.reason}`);
         }
         else {
@@ -453,47 +455,48 @@ class Moderator {
         // Extract content to moderate based on event type
         const contentToModerate = await this.extractContent(eventName, payload, context);
         if (!contentToModerate) {
-            return { actionTaken: 'none', reason: 'No content to moderate' };
+            return { actionTaken: "none", reason: "No content to moderate" };
         }
         // Get community health files for context
         const communityContext = await this.getCommunityContext(context);
         // Get moderation decision from AI
         const decision = await this.getModerationDecision(contentToModerate, communityContext);
         // Take action if needed
-        if (decision.shouldTakeAction && decision.severity >= this.config.severityThreshold) {
+        if (decision.shouldTakeAction &&
+            decision.severity >= this.config.severityThreshold) {
             return await this.takeAction(context, decision);
         }
-        return { actionTaken: 'none', reason: 'Content deemed acceptable' };
+        return { actionTaken: "none", reason: "Content deemed acceptable" };
     }
     async extractContent(eventName, payload, context) {
         switch (eventName) {
-            case 'issues':
-                if (payload.action === 'opened') {
-                    return `Issue Title: ${payload.issue.title}\nIssue Body: ${payload.issue.body || ''}`;
+            case "issues":
+                if (payload.action === "opened") {
+                    return `Issue Title: ${payload.issue.title}\nIssue Body: ${payload.issue.body || ""}`;
                 }
                 break;
-            case 'pull_request':
-                if (payload.action === 'opened') {
-                    return `PR Title: ${payload.pull_request.title}\nPR Body: ${payload.pull_request.body || ''}`;
+            case "pull_request":
+                if (payload.action === "opened") {
+                    return `PR Title: ${payload.pull_request.title}\nPR Body: ${payload.pull_request.body || ""}`;
                 }
                 break;
-            case 'issue_comment':
-                if (payload.action === 'created') {
+            case "issue_comment":
+                if (payload.action === "created") {
                     return await this.extractCommentContent(payload, context, false);
                 }
                 break;
-            case 'pull_request_review_comment':
-                if (payload.action === 'created') {
+            case "pull_request_review_comment":
+                if (payload.action === "created") {
                     return await this.extractCommentContent(payload, context, true);
                 }
                 break;
-            case 'discussion':
-                if (payload.action === 'created') {
-                    return `Discussion Title: ${payload.discussion.title}\nDiscussion Body: ${payload.discussion.body || ''}`;
+            case "discussion":
+                if (payload.action === "created") {
+                    return `Discussion Title: ${payload.discussion.title}\nDiscussion Body: ${payload.discussion.body || ""}`;
                 }
                 break;
-            case 'discussion_comment':
-                if (payload.action === 'created') {
+            case "discussion_comment":
+                if (payload.action === "created") {
                     return await this.extractDiscussionCommentContent(payload, context);
                 }
                 break;
@@ -502,12 +505,12 @@ class Moderator {
     }
     async extractCommentContent(payload, context, isPullRequestComment) {
         const { owner, repo } = context.repo;
-        let contextContent = '';
+        let contextContent = "";
         try {
             // Get parent issue/PR context
             if (isPullRequestComment && payload.pull_request) {
                 const pr = await this.githubClient.getPullRequest(owner, repo, payload.pull_request.number);
-                contextContent += `PR Title: ${pr.title}\nPR Body: ${pr.body || ''}\n\n`;
+                contextContent += `PR Title: ${pr.title}\nPR Body: ${pr.body || ""}\n\n`;
                 // Get recent comments for this PR
                 const recentComments = await this.githubClient.getRecentComments(owner, repo, payload.pull_request.number, 3);
                 if (recentComments.length > 0) {
@@ -515,12 +518,12 @@ class Moderator {
                     recentComments.forEach((comment, index) => {
                         contextContent += `${index + 1}. @${comment.user}: ${comment.body}\n`;
                     });
-                    contextContent += '\n';
+                    contextContent += "\n";
                 }
             }
             else if (!isPullRequestComment && payload.issue) {
                 const issue = await this.githubClient.getIssue(owner, repo, payload.issue.number);
-                contextContent += `Issue Title: ${issue.title}\nIssue Body: ${issue.body || ''}\n\n`;
+                contextContent += `Issue Title: ${issue.title}\nIssue Body: ${issue.body || ""}\n\n`;
                 // Get recent comments for this issue
                 const recentComments = await this.githubClient.getRecentComments(owner, repo, payload.issue.number, 3);
                 if (recentComments.length > 0) {
@@ -528,7 +531,7 @@ class Moderator {
                     recentComments.forEach((comment, index) => {
                         contextContent += `${index + 1}. @${comment.user}: ${comment.body}\n`;
                     });
-                    contextContent += '\n';
+                    contextContent += "\n";
                 }
             }
         }
@@ -536,17 +539,17 @@ class Moderator {
             core.warning(`Failed to fetch additional context: ${error}`);
         }
         // Add the new comment being moderated
-        const commentType = isPullRequestComment ? 'Review Comment' : 'Comment';
+        const commentType = isPullRequestComment ? "Review Comment" : "Comment";
         contextContent += `New ${commentType}: ${payload.comment.body}`;
         return contextContent;
     }
     async extractDiscussionCommentContent(payload, _context) {
-        let contextContent = '';
+        let contextContent = "";
         try {
             // Get parent discussion context
             if (payload.discussion && payload.discussion.node_id) {
                 const discussion = await this.githubClient.getDiscussion(payload.discussion.node_id);
-                contextContent += `Discussion Title: ${discussion.title}\nDiscussion Body: ${discussion.body || ''}\n\n`;
+                contextContent += `Discussion Title: ${discussion.title}\nDiscussion Body: ${discussion.body || ""}\n\n`;
                 // Get recent comments for this discussion
                 const recentComments = await this.githubClient.getRecentDiscussionComments(payload.discussion.node_id, 3);
                 if (recentComments.length > 0) {
@@ -554,7 +557,7 @@ class Moderator {
                     recentComments.forEach((comment, index) => {
                         contextContent += `${index + 1}. @${comment.user}: ${comment.body}\n`;
                     });
-                    contextContent += '\n';
+                    contextContent += "\n";
                 }
             }
         }
@@ -567,24 +570,27 @@ class Moderator {
     }
     async getCommunityContext(context) {
         const { owner, repo } = context.repo;
-        let communityContext = '';
+        let communityContext = "";
         try {
             // Try to get contributing guidelines
-            const contributing = await this.githubClient.getFileContent(owner, repo, '.github/CONTRIBUTING.md')
-                .catch(() => this.githubClient.getFileContent(owner, repo, 'CONTRIBUTING.md'))
+            const contributing = await this.githubClient
+                .getFileContent(owner, repo, ".github/CONTRIBUTING.md")
+                .catch(() => this.githubClient.getFileContent(owner, repo, "CONTRIBUTING.md"))
                 .catch(() => null);
             if (contributing) {
                 communityContext += `Contributing Guidelines:\n${contributing}\n\n`;
             }
             // Try to get code of conduct
-            const codeOfConduct = await this.githubClient.getFileContent(owner, repo, '.github/CODE_OF_CONDUCT.md')
-                .catch(() => this.githubClient.getFileContent(owner, repo, 'CODE_OF_CONDUCT.md'))
+            const codeOfConduct = await this.githubClient
+                .getFileContent(owner, repo, ".github/CODE_OF_CONDUCT.md")
+                .catch(() => this.githubClient.getFileContent(owner, repo, "CODE_OF_CONDUCT.md"))
                 .catch(() => null);
             if (codeOfConduct) {
                 communityContext += `Code of Conduct:\n${codeOfConduct}\n\n`;
             }
             // Try to get issue template
-            const issueTemplate = await this.githubClient.getFileContent(owner, repo, '.github/ISSUE_TEMPLATE.md')
+            const issueTemplate = await this.githubClient
+                .getFileContent(owner, repo, ".github/ISSUE_TEMPLATE.md")
                 .catch(() => null);
             if (issueTemplate) {
                 communityContext += `Issue Template:\n${issueTemplate}\n\n`;
@@ -593,7 +599,7 @@ class Moderator {
         catch (error) {
             core.warning(`Failed to fetch community files: ${error}`);
         }
-        return communityContext || 'No specific community guidelines found.';
+        return communityContext || "No specific community guidelines found.";
     }
     async getModerationDecision(content, communityContext) {
         const prompt = this.buildModerationPrompt(content, communityContext);
@@ -605,9 +611,9 @@ class Moderator {
             core.warning(`AI moderation failed: ${error}`);
             return {
                 shouldTakeAction: false,
-                actionType: 'none',
+                actionType: "none",
                 severity: 0,
-                reason: 'AI moderation unavailable'
+                reason: "AI moderation unavailable",
             };
         }
     }
@@ -642,40 +648,42 @@ Respond only with valid JSON.`;
         const { owner, repo } = context.repo;
         try {
             switch (decision.actionType) {
-                case 'comment':
+                case "comment":
                     if (decision.response) {
                         await this.postComment(context, decision.response);
-                        return { actionTaken: 'comment', reason: decision.reason };
+                        return { actionTaken: "comment", reason: decision.reason };
                     }
                     break;
-                case 'hide':
-                    if ((eventName === 'issue_comment' || eventName === 'pull_request_review_comment') && payload.comment) {
+                case "hide":
+                    if ((eventName === "issue_comment" ||
+                        eventName === "pull_request_review_comment") &&
+                        payload.comment) {
                         await this.githubClient.hideComment(payload.comment.node_id);
-                        return { actionTaken: 'hide', reason: decision.reason };
+                        return { actionTaken: "hide", reason: decision.reason };
                     }
-                    else if (eventName === 'discussion_comment' && payload.comment) {
+                    else if (eventName === "discussion_comment" && payload.comment) {
                         await this.githubClient.hideComment(payload.comment.node_id);
-                        return { actionTaken: 'hide', reason: decision.reason };
+                        return { actionTaken: "hide", reason: decision.reason };
                     }
                     break;
-                case 'lock':
-                    if (eventName === 'issues' && payload.issue) {
+                case "lock":
+                    if (eventName === "issues" && payload.issue) {
                         await this.githubClient.lockIssue(owner, repo, payload.issue.number);
-                        return { actionTaken: 'lock', reason: decision.reason };
+                        return { actionTaken: "lock", reason: decision.reason };
                     }
-                    else if (eventName === 'pull_request' && payload.pull_request) {
+                    else if (eventName === "pull_request" && payload.pull_request) {
                         await this.githubClient.lockPullRequest(owner, repo, payload.pull_request.number);
-                        return { actionTaken: 'lock', reason: decision.reason };
+                        return { actionTaken: "lock", reason: decision.reason };
                     }
-                    else if (eventName === 'discussion' && payload.discussion) {
+                    else if (eventName === "discussion" && payload.discussion) {
                         await this.githubClient.lockDiscussion(payload.discussion.node_id);
-                        return { actionTaken: 'lock', reason: decision.reason };
+                        return { actionTaken: "lock", reason: decision.reason };
                     }
                     break;
-                case 'suggest':
+                case "suggest":
                     if (decision.response) {
                         await this.postComment(context, decision.response);
-                        return { actionTaken: 'suggest', reason: decision.reason };
+                        return { actionTaken: "suggest", reason: decision.reason };
                     }
                     break;
             }
@@ -683,24 +691,24 @@ Respond only with valid JSON.`;
         catch (error) {
             core.warning(`Failed to take action: ${error}`);
         }
-        return { actionTaken: 'none', reason: 'Action could not be completed' };
+        return { actionTaken: "none", reason: "Action could not be completed" };
     }
     async postComment(context, comment) {
         const { eventName, payload } = context;
         const { owner, repo } = context.repo;
-        if (eventName === 'issues' && payload.issue) {
+        if (eventName === "issues" && payload.issue) {
             await this.githubClient.createIssueComment(owner, repo, payload.issue.number, comment);
         }
-        else if (eventName === 'pull_request' && payload.pull_request) {
+        else if (eventName === "pull_request" && payload.pull_request) {
             await this.githubClient.createPullRequestComment(owner, repo, payload.pull_request.number, comment);
         }
-        else if (eventName === 'issue_comment' && payload.issue) {
+        else if (eventName === "issue_comment" && payload.issue) {
             await this.githubClient.createIssueComment(owner, repo, payload.issue.number, comment);
         }
-        else if (eventName === 'discussion' && payload.discussion) {
+        else if (eventName === "discussion" && payload.discussion) {
             await this.githubClient.createDiscussionComment(payload.discussion.node_id, comment);
         }
-        else if (eventName === 'discussion_comment' && payload.discussion) {
+        else if (eventName === "discussion_comment" && payload.discussion) {
             await this.githubClient.createDiscussionComment(payload.discussion.node_id, comment);
         }
     }
@@ -759,7 +767,7 @@ class OpenAIClient {
     constructor(apiKey, baseURL) {
         this.client = new openai_1.default({
             apiKey,
-            baseURL
+            baseURL,
         });
     }
     async getModeration(prompt, model) {
@@ -768,29 +776,29 @@ class OpenAIClient {
                 model,
                 messages: [
                     {
-                        role: 'system',
-                        content: 'You are a helpful community moderator. Respond only with valid JSON as specified in the prompt.'
+                        role: "system",
+                        content: "You are a helpful community moderator. Respond only with valid JSON as specified in the prompt.",
                     },
                     {
-                        role: 'user',
-                        content: prompt
-                    }
+                        role: "user",
+                        content: prompt,
+                    },
                 ],
                 temperature: 0.3,
-                max_tokens: 1000
+                max_tokens: 1000,
             });
             const content = response.choices[0]?.message?.content;
             if (!content) {
-                throw new Error('No response from AI model');
+                throw new Error("No response from AI model");
             }
             try {
                 const decision = JSON.parse(content);
                 // Validate the response structure
-                if (typeof decision.shouldTakeAction !== 'boolean' ||
-                    typeof decision.severity !== 'number' ||
-                    typeof decision.reason !== 'string' ||
-                    !['comment', 'hide', 'lock', 'suggest', 'none'].includes(decision.actionType)) {
-                    throw new Error('Invalid response structure from AI model');
+                if (typeof decision.shouldTakeAction !== "boolean" ||
+                    typeof decision.severity !== "number" ||
+                    typeof decision.reason !== "string" ||
+                    !["comment", "hide", "lock", "suggest", "none"].includes(decision.actionType)) {
+                    throw new Error("Invalid response structure from AI model");
                 }
                 // Ensure severity is within bounds
                 decision.severity = Math.max(1, Math.min(10, decision.severity));
@@ -803,9 +811,9 @@ class OpenAIClient {
                 // Fallback decision
                 return {
                     shouldTakeAction: false,
-                    actionType: 'none',
+                    actionType: "none",
                     severity: 1,
-                    reason: 'Failed to parse AI response'
+                    reason: "Failed to parse AI response",
                 };
             }
         }
@@ -817,9 +825,9 @@ class OpenAIClient {
     async testConnection() {
         try {
             const response = await this.client.chat.completions.create({
-                model: 'openai/gpt-4.1',
-                messages: [{ role: 'user', content: 'Test connection' }],
-                max_tokens: 5
+                model: "openai/gpt-4.1",
+                messages: [{ role: "user", content: "Test connection" }],
+                max_tokens: 5,
             });
             return !!response.choices[0]?.message?.content;
         }

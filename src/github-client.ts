@@ -1,5 +1,5 @@
-import { Octokit } from '@octokit/rest';
-import * as core from '@actions/core';
+import { Octokit } from "@octokit/rest";
+import * as core from "@actions/core";
 
 export class GitHubClient {
   private octokit: Octokit;
@@ -7,36 +7,45 @@ export class GitHubClient {
   constructor(token: string) {
     this.octokit = new Octokit({
       auth: token,
-      userAgent: 'ai-community-moderator'
+      userAgent: "ai-community-moderator",
     });
   }
 
-  async getFileContent(owner: string, repo: string, path: string): Promise<string> {
+  async getFileContent(
+    owner: string,
+    repo: string,
+    path: string,
+  ): Promise<string> {
     try {
       const response = await this.octokit.rest.repos.getContent({
         owner,
         repo,
-        path
+        path,
       });
 
-      if ('content' in response.data && response.data.content) {
-        return Buffer.from(response.data.content, 'base64').toString('utf-8');
+      if ("content" in response.data && response.data.content) {
+        return Buffer.from(response.data.content, "base64").toString("utf-8");
       }
-      
-      throw new Error('File content not found');
+
+      throw new Error("File content not found");
     } catch (error) {
       core.debug(`Failed to get file ${path}: ${error}`);
       throw error;
     }
   }
 
-  async createIssueComment(owner: string, repo: string, issueNumber: number, body: string): Promise<void> {
+  async createIssueComment(
+    owner: string,
+    repo: string,
+    issueNumber: number,
+    body: string,
+  ): Promise<void> {
     try {
       await this.octokit.rest.issues.createComment({
         owner,
         repo,
         issue_number: issueNumber,
-        body
+        body,
       });
       core.info(`Posted comment on issue #${issueNumber}`);
     } catch (error) {
@@ -45,13 +54,18 @@ export class GitHubClient {
     }
   }
 
-  async createPullRequestComment(owner: string, repo: string, pullNumber: number, body: string): Promise<void> {
+  async createPullRequestComment(
+    owner: string,
+    repo: string,
+    pullNumber: number,
+    body: string,
+  ): Promise<void> {
     try {
       await this.octokit.rest.issues.createComment({
         owner,
         repo,
         issue_number: pullNumber,
-        body
+        body,
       });
       core.info(`Posted comment on PR #${pullNumber}`);
     } catch (error) {
@@ -62,7 +76,8 @@ export class GitHubClient {
 
   async hideComment(nodeId: string): Promise<void> {
     try {
-      await this.octokit.graphql(`
+      await this.octokit.graphql(
+        `
         mutation($nodeId: ID!) {
           minimizeComment(input: {subjectId: $nodeId, classifier: SPAM}) {
             minimizedComment {
@@ -70,7 +85,9 @@ export class GitHubClient {
             }
           }
         }
-      `, { nodeId });
+      `,
+        { nodeId },
+      );
       core.info(`Hidden comment with node ID: ${nodeId}`);
     } catch (error) {
       core.error(`Failed to hide comment: ${error}`);
@@ -78,13 +95,17 @@ export class GitHubClient {
     }
   }
 
-  async lockIssue(owner: string, repo: string, issueNumber: number): Promise<void> {
+  async lockIssue(
+    owner: string,
+    repo: string,
+    issueNumber: number,
+  ): Promise<void> {
     try {
       await this.octokit.rest.issues.lock({
         owner,
         repo,
         issue_number: issueNumber,
-        lock_reason: 'spam'
+        lock_reason: "spam",
       });
       core.info(`Locked issue #${issueNumber}`);
     } catch (error) {
@@ -93,13 +114,17 @@ export class GitHubClient {
     }
   }
 
-  async lockPullRequest(owner: string, repo: string, pullNumber: number): Promise<void> {
+  async lockPullRequest(
+    owner: string,
+    repo: string,
+    pullNumber: number,
+  ): Promise<void> {
     try {
       await this.octokit.rest.issues.lock({
         owner,
         repo,
         issue_number: pullNumber,
-        lock_reason: 'spam'
+        lock_reason: "spam",
       });
       core.info(`Locked PR #${pullNumber}`);
     } catch (error) {
@@ -108,13 +133,17 @@ export class GitHubClient {
     }
   }
 
-  async limitInteractions(owner: string, repo: string, limit: 'existing_users' | 'contributors_only' | 'collaborators_only'): Promise<void> {
+  async limitInteractions(
+    owner: string,
+    repo: string,
+    limit: "existing_users" | "contributors_only" | "collaborators_only",
+  ): Promise<void> {
     try {
       await this.octokit.rest.interactions.setRestrictionsForRepo({
         owner,
         repo,
         limit,
-        expiry: 'one_day'
+        expiry: "one_day",
       });
       core.info(`Limited interactions for repository to ${limit}`);
     } catch (error) {
@@ -123,10 +152,14 @@ export class GitHubClient {
     }
   }
 
-  async createDiscussionComment(discussionNodeId: string, body: string): Promise<void> {
+  async createDiscussionComment(
+    discussionNodeId: string,
+    body: string,
+  ): Promise<void> {
     try {
       // Use GraphQL for creating discussion comments as the REST API doesn't support this yet
-      await this.octokit.graphql(`
+      await this.octokit.graphql(
+        `
         mutation($discussionId: ID!, $body: String!) {
           addDiscussionComment(input: {discussionId: $discussionId, body: $body}) {
             comment {
@@ -134,11 +167,15 @@ export class GitHubClient {
             }
           }
         }
-      `, { 
-        discussionId: discussionNodeId, 
-        body 
-      });
-      core.info(`Posted comment on discussion with node ID: ${discussionNodeId}`);
+      `,
+        {
+          discussionId: discussionNodeId,
+          body,
+        },
+      );
+      core.info(
+        `Posted comment on discussion with node ID: ${discussionNodeId}`,
+      );
     } catch (error) {
       core.error(`Failed to create discussion comment: ${error}`);
       throw error;
@@ -148,7 +185,8 @@ export class GitHubClient {
   async lockDiscussion(discussionNodeId: string): Promise<void> {
     try {
       // Use GraphQL for locking discussions as the REST API doesn't support this yet
-      await this.octokit.graphql(`
+      await this.octokit.graphql(
+        `
         mutation($discussionId: ID!) {
           lockLockable(input: {lockableId: $discussionId, lockReason: SPAM}) {
             lockedRecord {
@@ -156,7 +194,9 @@ export class GitHubClient {
             }
           }
         }
-      `, { discussionId: discussionNodeId });
+      `,
+        { discussionId: discussionNodeId },
+      );
       core.info(`Locked discussion with node ID: ${discussionNodeId}`);
     } catch (error) {
       core.error(`Failed to lock discussion: ${error}`);
@@ -164,16 +204,20 @@ export class GitHubClient {
     }
   }
 
-  async getIssue(owner: string, repo: string, issueNumber: number): Promise<{title: string, body: string | null}> {
+  async getIssue(
+    owner: string,
+    repo: string,
+    issueNumber: number,
+  ): Promise<{ title: string; body: string | null }> {
     try {
       const response = await this.octokit.rest.issues.get({
         owner,
         repo,
-        issue_number: issueNumber
+        issue_number: issueNumber,
       });
       return {
         title: response.data.title,
-        body: response.data.body || null
+        body: response.data.body || null,
       };
     } catch (error) {
       core.debug(`Failed to get issue ${issueNumber}: ${error}`);
@@ -181,16 +225,20 @@ export class GitHubClient {
     }
   }
 
-  async getPullRequest(owner: string, repo: string, pullNumber: number): Promise<{title: string, body: string | null}> {
+  async getPullRequest(
+    owner: string,
+    repo: string,
+    pullNumber: number,
+  ): Promise<{ title: string; body: string | null }> {
     try {
       const response = await this.octokit.rest.pulls.get({
         owner,
         repo,
-        pull_number: pullNumber
+        pull_number: pullNumber,
       });
       return {
         title: response.data.title,
-        body: response.data.body || null
+        body: response.data.body || null,
       };
     } catch (error) {
       core.debug(`Failed to get PR ${pullNumber}: ${error}`);
@@ -198,31 +246,43 @@ export class GitHubClient {
     }
   }
 
-  async getRecentComments(owner: string, repo: string, issueNumber: number, limit: number = 3): Promise<Array<{body: string, created_at: string, user: string}>> {
+  async getRecentComments(
+    owner: string,
+    repo: string,
+    issueNumber: number,
+    limit: number = 3,
+  ): Promise<Array<{ body: string; created_at: string; user: string }>> {
     try {
       const response = await this.octokit.rest.issues.listComments({
         owner,
         repo,
         issue_number: issueNumber,
-        sort: 'created',
-        direction: 'desc',
-        per_page: limit
+        sort: "created",
+        direction: "desc",
+        per_page: limit,
       });
-      
-      return response.data.map(comment => ({
-        body: comment.body || '',
-        created_at: comment.created_at,
-        user: comment.user?.login || 'unknown'
-      })).reverse(); // Reverse to get chronological order (oldest first)
+
+      return response.data
+        .map((comment) => ({
+          body: comment.body || "",
+          created_at: comment.created_at,
+          user: comment.user?.login || "unknown",
+        }))
+        .reverse(); // Reverse to get chronological order (oldest first)
     } catch (error) {
-      core.debug(`Failed to get recent comments for issue ${issueNumber}: ${error}`);
+      core.debug(
+        `Failed to get recent comments for issue ${issueNumber}: ${error}`,
+      );
       throw error;
     }
   }
 
-  async getDiscussion(discussionNodeId: string): Promise<{title: string, body: string | null}> {
+  async getDiscussion(
+    discussionNodeId: string,
+  ): Promise<{ title: string; body: string | null }> {
     try {
-      const result = await this.octokit.graphql(`
+      const result = await this.octokit.graphql(
+        `
         query($discussionId: ID!) {
           node(id: $discussionId) {
             ... on Discussion {
@@ -231,12 +291,14 @@ export class GitHubClient {
             }
           }
         }
-      `, { discussionId: discussionNodeId });
+      `,
+        { discussionId: discussionNodeId },
+      );
 
       const discussion = (result as any).node;
       return {
         title: discussion.title,
-        body: discussion.body || null
+        body: discussion.body || null,
       };
     } catch (error) {
       core.debug(`Failed to get discussion ${discussionNodeId}: ${error}`);
@@ -244,9 +306,13 @@ export class GitHubClient {
     }
   }
 
-  async getRecentDiscussionComments(discussionNodeId: string, limit: number = 3): Promise<Array<{body: string, created_at: string, user: string}>> {
+  async getRecentDiscussionComments(
+    discussionNodeId: string,
+    limit: number = 3,
+  ): Promise<Array<{ body: string; created_at: string; user: string }>> {
     try {
-      const result = await this.octokit.graphql(`
+      const result = await this.octokit.graphql(
+        `
         query($discussionId: ID!, $limit: Int!) {
           node(id: $discussionId) {
             ... on Discussion {
@@ -262,16 +328,20 @@ export class GitHubClient {
             }
           }
         }
-      `, { discussionId: discussionNodeId, limit });
+      `,
+        { discussionId: discussionNodeId, limit },
+      );
 
       const discussion = (result as any).node;
       return discussion.comments.nodes.map((comment: any) => ({
-        body: comment.body || '',
+        body: comment.body || "",
         created_at: comment.createdAt,
-        user: comment.author?.login || 'unknown'
+        user: comment.author?.login || "unknown",
       }));
     } catch (error) {
-      core.debug(`Failed to get recent discussion comments for ${discussionNodeId}: ${error}`);
+      core.debug(
+        `Failed to get recent discussion comments for ${discussionNodeId}: ${error}`,
+      );
       throw error;
     }
   }
