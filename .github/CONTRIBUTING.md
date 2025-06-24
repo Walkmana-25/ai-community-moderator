@@ -25,12 +25,14 @@ Here are the main ways you can contribute:
 ### Development Setup
 
 1. **Fork and Clone**
+
    ```bash
    git clone https://github.com/YOUR-USERNAME/ai-community-moderator.git
    cd ai-community-moderator
    ```
 
 2. **Install Dependencies**
+
    ```bash
    npm install
    ```

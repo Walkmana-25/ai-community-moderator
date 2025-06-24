@@ -281,15 +281,13 @@ describe("Moderator", () => {
           title: "Test PR",
           body: "This is a test pull request",
         }),
-        getRecentComments: jest
-          .fn()
-          .mockResolvedValue([
-            {
-              body: "PR comment 1",
-              created_at: "2023-01-01T00:00:00Z",
-              user: "reviewer1",
-            },
-          ]),
+        getRecentComments: jest.fn().mockResolvedValue([
+          {
+            body: "PR comment 1",
+            created_at: "2023-01-01T00:00:00Z",
+            user: "reviewer1",
+          },
+        ]),
       };
 
       const mockOpenAIInstance = {
@@ -388,15 +386,13 @@ describe("Moderator", () => {
           title: "Test Discussion",
           body: "This is a test discussion",
         }),
-        getRecentDiscussionComments: jest
-          .fn()
-          .mockResolvedValue([
-            {
-              body: "Previous comment",
-              created_at: "2023-01-01T00:00:00Z",
-              user: "user1",
-            },
-          ]),
+        getRecentDiscussionComments: jest.fn().mockResolvedValue([
+          {
+            body: "Previous comment",
+            created_at: "2023-01-01T00:00:00Z",
+            user: "user1",
+          },
+        ]),
       };
 
       const mockOpenAIInstance = {

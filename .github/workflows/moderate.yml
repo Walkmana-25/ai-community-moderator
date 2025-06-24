@@ -2,11 +2,11 @@
 name: AI Community Moderator
 
 permissions:
-  contents: read        # To read community health files
-  issues: write         # To comment on and lock issues
-  pull-requests: write  # To comment on and lock PRs
-  discussions: write    # To moderate discussions (if used)
-  models: read          # To access GitHub Models for AI inference
+  contents: read # To read community health files
+  issues: write # To comment on and lock issues
+  pull-requests: write # To comment on and lock PRs
+  discussions: write # To moderate discussions (if used)
+  models: read # To access GitHub Models for AI inference
 
 "on":
   issues:
