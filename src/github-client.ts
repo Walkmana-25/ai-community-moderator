@@ -163,4 +163,116 @@ export class GitHubClient {
       throw error;
     }
   }
+
+  async getIssue(owner: string, repo: string, issueNumber: number): Promise<{title: string, body: string | null}> {
+    try {
+      const response = await this.octokit.rest.issues.get({
+        owner,
+        repo,
+        issue_number: issueNumber
+      });
+      return {
+        title: response.data.title,
+        body: response.data.body || null
+      };
+    } catch (error) {
+      core.debug(`Failed to get issue ${issueNumber}: ${error}`);
+      throw error;
+    }
+  }
+
+  async getPullRequest(owner: string, repo: string, pullNumber: number): Promise<{title: string, body: string | null}> {
+    try {
+      const response = await this.octokit.rest.pulls.get({
+        owner,
+        repo,
+        pull_number: pullNumber
+      });
+      return {
+        title: response.data.title,
+        body: response.data.body || null
+      };
+    } catch (error) {
+      core.debug(`Failed to get PR ${pullNumber}: ${error}`);
+      throw error;
+    }
+  }
+
+  async getRecentComments(owner: string, repo: string, issueNumber: number, limit: number = 3): Promise<Array<{body: string, created_at: string, user: string}>> {
+    try {
+      const response = await this.octokit.rest.issues.listComments({
+        owner,
+        repo,
+        issue_number: issueNumber,
+        sort: 'created',
+        direction: 'desc',
+        per_page: limit
+      });
+      
+      return response.data.map(comment => ({
+        body: comment.body || '',
+        created_at: comment.created_at,
+        user: comment.user?.login || 'unknown'
+      })).reverse(); // Reverse to get chronological order (oldest first)
+    } catch (error) {
+      core.debug(`Failed to get recent comments for issue ${issueNumber}: ${error}`);
+      throw error;
+    }
+  }
+
+  async getDiscussion(discussionNodeId: string): Promise<{title: string, body: string | null}> {
+    try {
+      const result = await this.octokit.graphql(`
+        query($discussionId: ID!) {
+          node(id: $discussionId) {
+            ... on Discussion {
+              title
+              body
+            }
+          }
+        }
+      `, { discussionId: discussionNodeId });
+
+      const discussion = (result as any).node;
+      return {
+        title: discussion.title,
+        body: discussion.body || null
+      };
+    } catch (error) {
+      core.debug(`Failed to get discussion ${discussionNodeId}: ${error}`);
+      throw error;
+    }
+  }
+
+  async getRecentDiscussionComments(discussionNodeId: string, limit: number = 3): Promise<Array<{body: string, created_at: string, user: string}>> {
+    try {
+      const result = await this.octokit.graphql(`
+        query($discussionId: ID!, $limit: Int!) {
+          node(id: $discussionId) {
+            ... on Discussion {
+              comments(last: $limit) {
+                nodes {
+                  body
+                  createdAt
+                  author {
+                    login
+                  }
+                }
+              }
+            }
+          }
+        }
+      `, { discussionId: discussionNodeId, limit });
+
+      const discussion = (result as any).node;
+      return discussion.comments.nodes.map((comment: any) => ({
+        body: comment.body || '',
+        created_at: comment.createdAt,
+        user: comment.author?.login || 'unknown'
+      }));
+    } catch (error) {
+      core.debug(`Failed to get recent discussion comments for ${discussionNodeId}: ${error}`);
+      throw error;
+    }
+  }
 }

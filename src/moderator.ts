@@ -41,7 +41,7 @@ export class Moderator {
     core.info(`Processing event: ${eventName}`);
     
     // Extract content to moderate based on event type
-    const contentToModerate = this.extractContent(eventName, payload);
+    const contentToModerate = await this.extractContent(eventName, payload, context);
     if (!contentToModerate) {
       return { actionTaken: 'none', reason: 'No content to moderate' };
     }
@@ -60,7 +60,7 @@ export class Moderator {
     return { actionTaken: 'none', reason: 'Content deemed acceptable' };
   }
 
-  private extractContent(eventName: string, payload: any): string | null {
+  private async extractContent(eventName: string, payload: any, context: Context): Promise<string | null> {
     switch (eventName) {
       case 'issues':
         if (payload.action === 'opened') {
@@ -74,12 +74,12 @@ export class Moderator {
         break;
       case 'issue_comment':
         if (payload.action === 'created') {
-          return `Comment: ${payload.comment.body}`;
+          return await this.extractCommentContent(payload, context, false);
         }
         break;
       case 'pull_request_review_comment':
         if (payload.action === 'created') {
-          return `Review Comment: ${payload.comment.body}`;
+          return await this.extractCommentContent(payload, context, true);
         }
         break;
       case 'discussion':
@@ -89,11 +89,84 @@ export class Moderator {
         break;
       case 'discussion_comment':
         if (payload.action === 'created') {
-          return `Discussion Comment: ${payload.comment.body}`;
+          return await this.extractDiscussionCommentContent(payload, context);
         }
         break;
     }
     return null;
+  }
+
+  private async extractCommentContent(payload: any, context: Context, isPullRequestComment: boolean): Promise<string> {
+    const { owner, repo } = context.repo;
+    let contextContent = '';
+
+    try {
+      // Get parent issue/PR context
+      if (isPullRequestComment && payload.pull_request) {
+        const pr = await this.githubClient.getPullRequest(owner, repo, payload.pull_request.number);
+        contextContent += `PR Title: ${pr.title}\nPR Body: ${pr.body || ''}\n\n`;
+        
+        // Get recent comments for this PR
+        const recentComments = await this.githubClient.getRecentComments(owner, repo, payload.pull_request.number, 3);
+        if (recentComments.length > 0) {
+          contextContent += `Recent Comments:\n`;
+          recentComments.forEach((comment, index) => {
+            contextContent += `${index + 1}. @${comment.user}: ${comment.body}\n`;
+          });
+          contextContent += '\n';
+        }
+      } else if (!isPullRequestComment && payload.issue) {
+        const issue = await this.githubClient.getIssue(owner, repo, payload.issue.number);
+        contextContent += `Issue Title: ${issue.title}\nIssue Body: ${issue.body || ''}\n\n`;
+        
+        // Get recent comments for this issue
+        const recentComments = await this.githubClient.getRecentComments(owner, repo, payload.issue.number, 3);
+        if (recentComments.length > 0) {
+          contextContent += `Recent Comments:\n`;
+          recentComments.forEach((comment, index) => {
+            contextContent += `${index + 1}. @${comment.user}: ${comment.body}\n`;
+          });
+          contextContent += '\n';
+        }
+      }
+    } catch (error) {
+      core.warning(`Failed to fetch additional context: ${error}`);
+    }
+
+    // Add the new comment being moderated
+    const commentType = isPullRequestComment ? 'Review Comment' : 'Comment';
+    contextContent += `New ${commentType}: ${payload.comment.body}`;
+
+    return contextContent;
+  }
+
+  private async extractDiscussionCommentContent(payload: any, _context: Context): Promise<string> {
+    let contextContent = '';
+
+    try {
+      // Get parent discussion context
+      if (payload.discussion && payload.discussion.node_id) {
+        const discussion = await this.githubClient.getDiscussion(payload.discussion.node_id);
+        contextContent += `Discussion Title: ${discussion.title}\nDiscussion Body: ${discussion.body || ''}\n\n`;
+        
+        // Get recent comments for this discussion
+        const recentComments = await this.githubClient.getRecentDiscussionComments(payload.discussion.node_id, 3);
+        if (recentComments.length > 0) {
+          contextContent += `Recent Comments:\n`;
+          recentComments.forEach((comment, index) => {
+            contextContent += `${index + 1}. @${comment.user}: ${comment.body}\n`;
+          });
+          contextContent += '\n';
+        }
+      }
+    } catch (error) {
+      core.warning(`Failed to fetch discussion context: ${error}`);
+    }
+
+    // Add the new comment being moderated
+    contextContent += `New Discussion Comment: ${payload.comment.body}`;
+
+    return contextContent;
   }
 
   private async getCommunityContext(context: Context): Promise<string> {
