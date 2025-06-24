@@ -8,4 +8,6 @@ export declare class GitHubClient {
     lockIssue(owner: string, repo: string, issueNumber: number): Promise<void>;
     lockPullRequest(owner: string, repo: string, pullNumber: number): Promise<void>;
     limitInteractions(owner: string, repo: string, limit: 'existing_users' | 'contributors_only' | 'collaborators_only'): Promise<void>;
+    createDiscussionComment(discussionNodeId: string, body: string): Promise<void>;
+    lockDiscussion(discussionNodeId: string): Promise<void>;
 }

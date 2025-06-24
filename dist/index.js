@@ -160,6 +160,47 @@ class GitHubClient {
             throw error;
         }
     }
+    async createDiscussionComment(discussionNodeId, body) {
+        try {
+            // Use GraphQL for creating discussion comments as the REST API doesn't support this yet
+            await this.octokit.graphql(`
+        mutation($discussionId: ID!, $body: String!) {
+          addDiscussionComment(input: {discussionId: $discussionId, body: $body}) {
+            comment {
+              id
+            }
+          }
+        }
+      `, {
+                discussionId: discussionNodeId,
+                body
+            });
+            core.info(`Posted comment on discussion with node ID: ${discussionNodeId}`);
+        }
+        catch (error) {
+            core.error(`Failed to create discussion comment: ${error}`);
+            throw error;
+        }
+    }
+    async lockDiscussion(discussionNodeId) {
+        try {
+            // Use GraphQL for locking discussions as the REST API doesn't support this yet
+            await this.octokit.graphql(`
+        mutation($discussionId: ID!) {
+          lockLockable(input: {lockableId: $discussionId, lockReason: SPAM}) {
+            lockedRecord {
+              locked
+            }
+          }
+        }
+      `, { discussionId: discussionNodeId });
+            core.info(`Locked discussion with node ID: ${discussionNodeId}`);
+        }
+        catch (error) {
+            core.error(`Failed to lock discussion: ${error}`);
+            throw error;
+        }
+    }
 }
 exports.GitHubClient = GitHubClient;
 //# sourceMappingURL=github-client.js.map
@@ -330,6 +371,16 @@ class Moderator {
                     return `Review Comment: ${payload.comment.body}`;
                 }
                 break;
+            case 'discussion':
+                if (payload.action === 'created') {
+                    return `Discussion Title: ${payload.discussion.title}\nDiscussion Body: ${payload.discussion.body || ''}`;
+                }
+                break;
+            case 'discussion_comment':
+                if (payload.action === 'created') {
+                    return `Discussion Comment: ${payload.comment.body}`;
+                }
+                break;
         }
         return null;
     }
@@ -421,6 +472,10 @@ Respond only with valid JSON.`;
                         await this.githubClient.hideComment(payload.comment.node_id);
                         return { actionTaken: 'hide', reason: decision.reason };
                     }
+                    else if (eventName === 'discussion_comment' && payload.comment) {
+                        await this.githubClient.hideComment(payload.comment.node_id);
+                        return { actionTaken: 'hide', reason: decision.reason };
+                    }
                     break;
                 case 'lock':
                     if (eventName === 'issues' && payload.issue) {
@@ -429,6 +484,10 @@ Respond only with valid JSON.`;
                     }
                     else if (eventName === 'pull_request' && payload.pull_request) {
                         await this.githubClient.lockPullRequest(owner, repo, payload.pull_request.number);
+                        return { actionTaken: 'lock', reason: decision.reason };
+                    }
+                    else if (eventName === 'discussion' && payload.discussion) {
+                        await this.githubClient.lockDiscussion(payload.discussion.node_id);
                         return { actionTaken: 'lock', reason: decision.reason };
                     }
                     break;
@@ -456,6 +515,12 @@ Respond only with valid JSON.`;
         }
         else if (eventName === 'issue_comment' && payload.issue) {
             await this.githubClient.createIssueComment(owner, repo, payload.issue.number, comment);
+        }
+        else if (eventName === 'discussion' && payload.discussion) {
+            await this.githubClient.createDiscussionComment(payload.discussion.node_id, comment);
+        }
+        else if (eventName === 'discussion_comment' && payload.discussion) {
+            await this.githubClient.createDiscussionComment(payload.discussion.node_id, comment);
         }
     }
 }
