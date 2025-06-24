@@ -82,6 +82,16 @@ export class Moderator {
           return await this.extractCommentContent(payload, context, true);
         }
         break;
+      case 'discussion':
+        if (payload.action === 'created') {
+          return `Discussion Title: ${payload.discussion.title}\nDiscussion Body: ${payload.discussion.body || ''}`;
+        }
+        break;
+      case 'discussion_comment':
+        if (payload.action === 'created') {
+          return `Discussion Comment: ${payload.comment.body}`;
+        }
+        break;
     }
     return null;
   }
@@ -229,6 +239,9 @@ Respond only with valid JSON.`;
           if ((eventName === 'issue_comment' || eventName === 'pull_request_review_comment') && payload.comment) {
             await this.githubClient.hideComment(payload.comment.node_id);
             return { actionTaken: 'hide', reason: decision.reason };
+          } else if (eventName === 'discussion_comment' && payload.comment) {
+            await this.githubClient.hideComment(payload.comment.node_id);
+            return { actionTaken: 'hide', reason: decision.reason };
           }
           break;
           
@@ -238,6 +251,9 @@ Respond only with valid JSON.`;
             return { actionTaken: 'lock', reason: decision.reason };
           } else if (eventName === 'pull_request' && payload.pull_request) {
             await this.githubClient.lockPullRequest(owner, repo, payload.pull_request.number);
+            return { actionTaken: 'lock', reason: decision.reason };
+          } else if (eventName === 'discussion' && payload.discussion) {
+            await this.githubClient.lockDiscussion(payload.discussion.node_id);
             return { actionTaken: 'lock', reason: decision.reason };
           }
           break;
@@ -266,6 +282,10 @@ Respond only with valid JSON.`;
       await this.githubClient.createPullRequestComment(owner, repo, payload.pull_request.number, comment);
     } else if (eventName === 'issue_comment' && payload.issue) {
       await this.githubClient.createIssueComment(owner, repo, payload.issue.number, comment);
+    } else if (eventName === 'discussion' && payload.discussion) {
+      await this.githubClient.createDiscussionComment(payload.discussion.node_id, comment);
+    } else if (eventName === 'discussion_comment' && payload.discussion) {
+      await this.githubClient.createDiscussionComment(payload.discussion.node_id, comment);
     }
   }
 }

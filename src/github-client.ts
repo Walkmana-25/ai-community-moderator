@@ -123,6 +123,47 @@ export class GitHubClient {
     }
   }
 
+  async createDiscussionComment(discussionNodeId: string, body: string): Promise<void> {
+    try {
+      // Use GraphQL for creating discussion comments as the REST API doesn't support this yet
+      await this.octokit.graphql(`
+        mutation($discussionId: ID!, $body: String!) {
+          addDiscussionComment(input: {discussionId: $discussionId, body: $body}) {
+            comment {
+              id
+            }
+          }
+        }
+      `, { 
+        discussionId: discussionNodeId, 
+        body 
+      });
+      core.info(`Posted comment on discussion with node ID: ${discussionNodeId}`);
+    } catch (error) {
+      core.error(`Failed to create discussion comment: ${error}`);
+      throw error;
+    }
+  }
+
+  async lockDiscussion(discussionNodeId: string): Promise<void> {
+    try {
+      // Use GraphQL for locking discussions as the REST API doesn't support this yet
+      await this.octokit.graphql(`
+        mutation($discussionId: ID!) {
+          lockLockable(input: {lockableId: $discussionId, lockReason: SPAM}) {
+            lockedRecord {
+              locked
+            }
+          }
+        }
+      `, { discussionId: discussionNodeId });
+      core.info(`Locked discussion with node ID: ${discussionNodeId}`);
+    } catch (error) {
+      core.error(`Failed to lock discussion: ${error}`);
+      throw error;
+    }
+  }
+
   async getIssue(owner: string, repo: string, issueNumber: number): Promise<{title: string, body: string | null}> {
     try {
       const response = await this.octokit.rest.issues.get({

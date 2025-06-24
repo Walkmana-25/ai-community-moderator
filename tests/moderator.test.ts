@@ -4,9 +4,11 @@ jest.mock('../src/github-client', () => ({
     getFileContent: jest.fn(),
     createIssueComment: jest.fn(),
     createPullRequestComment: jest.fn(),
+    createDiscussionComment: jest.fn(),
     hideComment: jest.fn(),
     lockIssue: jest.fn(),
     lockPullRequest: jest.fn(),
+    lockDiscussion: jest.fn(),
     limitInteractions: jest.fn(),
     getIssue: jest.fn(),
     getPullRequest: jest.fn(),
@@ -62,9 +64,11 @@ describe('Moderator', () => {
         getFileContent: jest.fn().mockRejectedValue(new Error('File not found')),
         createIssueComment: jest.fn(),
         createPullRequestComment: jest.fn(),
+        createDiscussionComment: jest.fn(),
         hideComment: jest.fn(),
         lockIssue: jest.fn(),
         lockPullRequest: jest.fn(),
+        lockDiscussion: jest.fn(),
         limitInteractions: jest.fn(),
         getIssue: jest.fn(),
         getPullRequest: jest.fn(),
@@ -110,9 +114,11 @@ describe('Moderator', () => {
         getFileContent: jest.fn().mockRejectedValue(new Error('File not found')),
         createIssueComment: jest.fn().mockResolvedValue(undefined),
         createPullRequestComment: jest.fn(),
+        createDiscussionComment: jest.fn(),
         hideComment: jest.fn(),
         lockIssue: jest.fn(),
         lockPullRequest: jest.fn(),
+        lockDiscussion: jest.fn(),
         limitInteractions: jest.fn(),
         getIssue: jest.fn(),
         getPullRequest: jest.fn(),
@@ -159,6 +165,11 @@ describe('Moderator', () => {
         'Please review our community guidelines.'
       );
     });
+        lockDiscussion: jest.fn(),
+        limitInteractions: jest.fn(),
+        getIssue: jest.fn(),
+        getPullRequest: jest.fn(),
+        getRecentComments: jest.fn()
 
     it('should include enhanced context for issue comments', async () => {
       const mockGitHubInstance = {
@@ -288,6 +299,37 @@ describe('Moderator', () => {
       expect(calledPrompt).toContain('Recent Comments:');
       expect(calledPrompt).toContain('@reviewer1: PR comment 1');
       expect(calledPrompt).toContain('New Review Comment: This looks good to me');
+    });
+
+    it('should extract content from discussion created event', () => {
+      const context = {
+        eventName: 'discussion',
+        payload: {
+          action: 'created',
+          discussion: {
+            title: 'Test Discussion',
+            body: 'This is a test discussion'
+          }
+        }
+      };
+
+      const content = (moderator as any).extractContent(context.eventName, context.payload);
+      expect(content).toBe('Discussion Title: Test Discussion\nDiscussion Body: This is a test discussion');
+    });
+
+    it('should extract content from discussion comment created event', () => {
+      const context = {
+        eventName: 'discussion_comment',
+        payload: {
+          action: 'created',
+          comment: {
+            body: 'This is a test discussion comment'
+          }
+        }
+      };
+
+      const content = (moderator as any).extractContent(context.eventName, context.payload);
+      expect(content).toBe('Discussion Comment: This is a test discussion comment');
     });
   });
 });
