@@ -42,8 +42,6 @@ jobs:
           VALIDATE_JSON: true
           VALIDATE_YAML: true
           VALIDATE_MARKDOWN: true
-          # Disable some potentially problematic linters initially
-          VALIDATE_NATURAL_LANGUAGE: false
           # Use custom linter configs
           MARKDOWN_CONFIG_FILE: .github/linters/.markdown-lint.yml
           YAML_CONFIG_FILE: .github/linters/.yaml-lint.yml
