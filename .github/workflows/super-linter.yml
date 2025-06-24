@@ -29,19 +29,4 @@ jobs:
       - name: Run Super-Linter
         uses: super-linter/super-linter@v7
         env:
-          # To report GitHub Actions status checks
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # The following are Super-Linter environment variables
-          DEFAULT_BRANCH: main
-          # Will parse the entire repository and find all files
-          # to validate across all types
-          VALIDATE_ALL_CODEBASE: true
-          # Linters configuration
-          VALIDATE_JAVASCRIPT_ES: true
-          VALIDATE_TYPESCRIPT_ES: true
-          VALIDATE_JSON: true
-          VALIDATE_YAML: true
-          VALIDATE_MARKDOWN: true
-          # Use custom linter configs
-          MARKDOWN_CONFIG_FILE: .markdown-lint.yml
-          YAML_CONFIG_FILE: .yaml-lint.yml
