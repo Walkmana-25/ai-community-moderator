@@ -140,7 +140,7 @@ export class Moderator {
     return contextContent;
   }
 
-  private async extractDiscussionCommentContent(payload: any, context: Context): Promise<string> {
+  private async extractDiscussionCommentContent(payload: any, _context: Context): Promise<string> {
     let contextContent = '';
 
     try {
