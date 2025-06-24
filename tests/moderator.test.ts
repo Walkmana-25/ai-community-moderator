@@ -1,5 +1,5 @@
 // Mock dependencies first
-jest.mock('../src/github-client', () => ({
+jest.mock("../src/github-client", () => ({
   GitHubClient: jest.fn().mockImplementation(() => ({
     getFileContent: jest.fn(),
     createIssueComment: jest.fn(),
@@ -13,33 +13,37 @@ jest.mock('../src/github-client', () => ({
     getIssue: jest.fn(),
     getPullRequest: jest.fn(),
     getRecentComments: jest.fn(),
-        getDiscussion: jest.fn(),
-        getRecentDiscussionComments: jest.fn()
-  }))
+    getDiscussion: jest.fn(),
+    getRecentDiscussionComments: jest.fn(),
+  })),
 }));
 
-jest.mock('../src/openai-client', () => ({
+jest.mock("../src/openai-client", () => ({
   OpenAIClient: jest.fn().mockImplementation(() => ({
     getModeration: jest.fn(),
-    testConnection: jest.fn()
-  }))
+    testConnection: jest.fn(),
+  })),
 }));
 
-import { Moderator } from '../src/moderator';
-import { GitHubClient } from '../src/github-client';
-import { OpenAIClient } from '../src/openai-client';
+import { Moderator } from "../src/moderator";
+import { GitHubClient } from "../src/github-client";
+import { OpenAIClient } from "../src/openai-client";
 
-const MockedGitHubClient = GitHubClient as jest.MockedClass<typeof GitHubClient>;
-const MockedOpenAIClient = OpenAIClient as jest.MockedClass<typeof OpenAIClient>;
+const MockedGitHubClient = GitHubClient as jest.MockedClass<
+  typeof GitHubClient
+>;
+const MockedOpenAIClient = OpenAIClient as jest.MockedClass<
+  typeof OpenAIClient
+>;
 
-describe('Moderator', () => {
+describe("Moderator", () => {
   let moderator: Moderator;
   const config = {
-    githubToken: 'test-token',
-    openaiApiKey: 'test-api-key',
-    openaiBaseUrl: 'https://test.example.com',
-    model: 'gpt-4o',
-    severityThreshold: 5
+    githubToken: "test-token",
+    openaiApiKey: "test-api-key",
+    openaiBaseUrl: "https://test.example.com",
+    model: "gpt-4o",
+    severityThreshold: 5,
   };
 
   beforeEach(() => {
@@ -47,23 +51,25 @@ describe('Moderator', () => {
     moderator = new Moderator(config);
   });
 
-  describe('processEvent', () => {
-    it('should return no action for unsupported events', async () => {
+  describe("processEvent", () => {
+    it("should return no action for unsupported events", async () => {
       const context = {
-        eventName: 'push',
+        eventName: "push",
         payload: {},
-        repo: { owner: 'test', repo: 'test' }
+        repo: { owner: "test", repo: "test" },
       } as any;
 
       const result = await moderator.processEvent(context);
 
-      expect(result.actionTaken).toBe('none');
-      expect(result.reason).toBe('No content to moderate');
+      expect(result.actionTaken).toBe("none");
+      expect(result.reason).toBe("No content to moderate");
     });
 
-    it('should process issue opened event', async () => {
+    it("should process issue opened event", async () => {
       const mockGitHubInstance = {
-        getFileContent: jest.fn().mockRejectedValue(new Error('File not found')),
+        getFileContent: jest
+          .fn()
+          .mockRejectedValue(new Error("File not found")),
         createIssueComment: jest.fn(),
         createPullRequestComment: jest.fn(),
         createDiscussionComment: jest.fn(),
@@ -76,17 +82,17 @@ describe('Moderator', () => {
         getPullRequest: jest.fn(),
         getRecentComments: jest.fn(),
         getDiscussion: jest.fn(),
-        getRecentDiscussionComments: jest.fn()
+        getRecentDiscussionComments: jest.fn(),
       };
 
       const mockOpenAIInstance = {
         getModeration: jest.fn().mockResolvedValue({
           shouldTakeAction: false,
-          actionType: 'none',
+          actionType: "none",
           severity: 3,
-          reason: 'Content is acceptable'
+          reason: "Content is acceptable",
         }),
-        testConnection: jest.fn()
+        testConnection: jest.fn(),
       };
 
       (MockedGitHubClient as any).mockImplementation(() => mockGitHubInstance);
@@ -95,27 +101,29 @@ describe('Moderator', () => {
       const testModerator = new Moderator(config);
 
       const context = {
-        eventName: 'issues',
+        eventName: "issues",
         payload: {
-          action: 'opened',
+          action: "opened",
           issue: {
-            title: 'Test Issue',
-            body: 'This is a test issue',
-            number: 1
-          }
+            title: "Test Issue",
+            body: "This is a test issue",
+            number: 1,
+          },
         },
-        repo: { owner: 'test', repo: 'test' }
+        repo: { owner: "test", repo: "test" },
       } as any;
 
       const result = await testModerator.processEvent(context);
 
-      expect(result.actionTaken).toBe('none');
-      expect(result.reason).toBe('Content deemed acceptable');
+      expect(result.actionTaken).toBe("none");
+      expect(result.reason).toBe("Content deemed acceptable");
     });
 
-    it('should take action when severity threshold is met', async () => {
+    it("should take action when severity threshold is met", async () => {
       const mockGitHubInstance = {
-        getFileContent: jest.fn().mockRejectedValue(new Error('File not found')),
+        getFileContent: jest
+          .fn()
+          .mockRejectedValue(new Error("File not found")),
         createIssueComment: jest.fn().mockResolvedValue(undefined),
         createPullRequestComment: jest.fn(),
         createDiscussionComment: jest.fn(),
@@ -128,18 +136,18 @@ describe('Moderator', () => {
         getPullRequest: jest.fn(),
         getRecentComments: jest.fn(),
         getDiscussion: jest.fn(),
-        getRecentDiscussionComments: jest.fn()
+        getRecentDiscussionComments: jest.fn(),
       };
 
       const mockOpenAIInstance = {
         getModeration: jest.fn().mockResolvedValue({
           shouldTakeAction: true,
-          actionType: 'comment',
+          actionType: "comment",
           severity: 7,
-          reason: 'Content violates guidelines',
-          response: 'Please review our community guidelines.'
+          reason: "Content violates guidelines",
+          response: "Please review our community guidelines.",
         }),
-        testConnection: jest.fn()
+        testConnection: jest.fn(),
       };
 
       (MockedGitHubClient as any).mockImplementation(() => mockGitHubInstance);
@@ -148,33 +156,35 @@ describe('Moderator', () => {
       const testModerator = new Moderator(config);
 
       const context = {
-        eventName: 'issues',
+        eventName: "issues",
         payload: {
-          action: 'opened',
+          action: "opened",
           issue: {
-            title: 'Spam Issue',
-            body: 'This is spam content',
-            number: 1
-          }
+            title: "Spam Issue",
+            body: "This is spam content",
+            number: 1,
+          },
         },
-        repo: { owner: 'test', repo: 'test' }
+        repo: { owner: "test", repo: "test" },
       } as any;
 
       const result = await testModerator.processEvent(context);
 
-      expect(result.actionTaken).toBe('comment');
-      expect(result.reason).toBe('Content violates guidelines');
+      expect(result.actionTaken).toBe("comment");
+      expect(result.reason).toBe("Content violates guidelines");
       expect(mockGitHubInstance.createIssueComment).toHaveBeenCalledWith(
-        'test',
-        'test',
+        "test",
+        "test",
         1,
-        'Please review our community guidelines.'
+        "Please review our community guidelines.",
       );
     });
 
-    it('should include enhanced context for issue comments', async () => {
+    it("should include enhanced context for issue comments", async () => {
       const mockGitHubInstance = {
-        getFileContent: jest.fn().mockRejectedValue(new Error('File not found')),
+        getFileContent: jest
+          .fn()
+          .mockRejectedValue(new Error("File not found")),
         createIssueComment: jest.fn(),
         createPullRequestComment: jest.fn(),
         hideComment: jest.fn(),
@@ -182,24 +192,32 @@ describe('Moderator', () => {
         lockPullRequest: jest.fn(),
         limitInteractions: jest.fn(),
         getIssue: jest.fn().mockResolvedValue({
-          title: 'Original Issue',
-          body: 'This is the original issue description'
+          title: "Original Issue",
+          body: "This is the original issue description",
         }),
         getPullRequest: jest.fn(),
         getRecentComments: jest.fn().mockResolvedValue([
-          { body: 'First comment', created_at: '2023-01-01T00:00:00Z', user: 'user1' },
-          { body: 'Second comment', created_at: '2023-01-02T00:00:00Z', user: 'user2' }
-        ])
+          {
+            body: "First comment",
+            created_at: "2023-01-01T00:00:00Z",
+            user: "user1",
+          },
+          {
+            body: "Second comment",
+            created_at: "2023-01-02T00:00:00Z",
+            user: "user2",
+          },
+        ]),
       };
 
       const mockOpenAIInstance = {
         getModeration: jest.fn().mockResolvedValue({
           shouldTakeAction: false,
-          actionType: 'none',
+          actionType: "none",
           severity: 3,
-          reason: 'Content is acceptable'
+          reason: "Content is acceptable",
         }),
-        testConnection: jest.fn()
+        testConnection: jest.fn(),
       };
 
       (MockedGitHubClient as any).mockImplementation(() => mockGitHubInstance);
@@ -208,39 +226,50 @@ describe('Moderator', () => {
       const testModerator = new Moderator(config);
 
       const context = {
-        eventName: 'issue_comment',
+        eventName: "issue_comment",
         payload: {
-          action: 'created',
+          action: "created",
           issue: {
-            number: 1
+            number: 1,
           },
           comment: {
-            body: 'This is a new comment'
-          }
+            body: "This is a new comment",
+          },
         },
-        repo: { owner: 'test', repo: 'test' }
+        repo: { owner: "test", repo: "test" },
       } as any;
 
       await testModerator.processEvent(context);
 
       // Verify that the enhanced context was used
-      expect(mockGitHubInstance.getIssue).toHaveBeenCalledWith('test', 'test', 1);
-      expect(mockGitHubInstance.getRecentComments).toHaveBeenCalledWith('test', 'test', 1, 3);
-      
+      expect(mockGitHubInstance.getIssue).toHaveBeenCalledWith(
+        "test",
+        "test",
+        1,
+      );
+      expect(mockGitHubInstance.getRecentComments).toHaveBeenCalledWith(
+        "test",
+        "test",
+        1,
+        3,
+      );
+
       // Verify the AI was called with enhanced context
       expect(mockOpenAIInstance.getModeration).toHaveBeenCalled();
       const calledPrompt = mockOpenAIInstance.getModeration.mock.calls[0][0];
-      expect(calledPrompt).toContain('Original Issue');
-      expect(calledPrompt).toContain('This is the original issue description');
-      expect(calledPrompt).toContain('Recent Comments:');
-      expect(calledPrompt).toContain('@user1: First comment');
-      expect(calledPrompt).toContain('@user2: Second comment');
-      expect(calledPrompt).toContain('New Comment: This is a new comment');
+      expect(calledPrompt).toContain("Original Issue");
+      expect(calledPrompt).toContain("This is the original issue description");
+      expect(calledPrompt).toContain("Recent Comments:");
+      expect(calledPrompt).toContain("@user1: First comment");
+      expect(calledPrompt).toContain("@user2: Second comment");
+      expect(calledPrompt).toContain("New Comment: This is a new comment");
     });
 
-    it('should include enhanced context for PR review comments', async () => {
+    it("should include enhanced context for PR review comments", async () => {
       const mockGitHubInstance = {
-        getFileContent: jest.fn().mockRejectedValue(new Error('File not found')),
+        getFileContent: jest
+          .fn()
+          .mockRejectedValue(new Error("File not found")),
         createIssueComment: jest.fn(),
         createPullRequestComment: jest.fn(),
         hideComment: jest.fn(),
@@ -249,22 +278,28 @@ describe('Moderator', () => {
         limitInteractions: jest.fn(),
         getIssue: jest.fn(),
         getPullRequest: jest.fn().mockResolvedValue({
-          title: 'Test PR',
-          body: 'This is a test pull request'
+          title: "Test PR",
+          body: "This is a test pull request",
         }),
-        getRecentComments: jest.fn().mockResolvedValue([
-          { body: 'PR comment 1', created_at: '2023-01-01T00:00:00Z', user: 'reviewer1' }
-        ])
+        getRecentComments: jest
+          .fn()
+          .mockResolvedValue([
+            {
+              body: "PR comment 1",
+              created_at: "2023-01-01T00:00:00Z",
+              user: "reviewer1",
+            },
+          ]),
       };
 
       const mockOpenAIInstance = {
         getModeration: jest.fn().mockResolvedValue({
           shouldTakeAction: false,
-          actionType: 'none',
+          actionType: "none",
           severity: 2,
-          reason: 'Content is acceptable'
+          reason: "Content is acceptable",
         }),
-        testConnection: jest.fn()
+        testConnection: jest.fn(),
       };
 
       (MockedGitHubClient as any).mockImplementation(() => mockGitHubInstance);
@@ -273,52 +308,69 @@ describe('Moderator', () => {
       const testModerator = new Moderator(config);
 
       const context = {
-        eventName: 'pull_request_review_comment',
+        eventName: "pull_request_review_comment",
         payload: {
-          action: 'created',
+          action: "created",
           pull_request: {
-            number: 2
+            number: 2,
           },
           comment: {
-            body: 'This looks good to me'
-          }
+            body: "This looks good to me",
+          },
         },
-        repo: { owner: 'test', repo: 'test' }
+        repo: { owner: "test", repo: "test" },
       } as any;
 
       await testModerator.processEvent(context);
 
       // Verify that the enhanced context was used
-      expect(mockGitHubInstance.getPullRequest).toHaveBeenCalledWith('test', 'test', 2);
-      expect(mockGitHubInstance.getRecentComments).toHaveBeenCalledWith('test', 'test', 2, 3);
-      
+      expect(mockGitHubInstance.getPullRequest).toHaveBeenCalledWith(
+        "test",
+        "test",
+        2,
+      );
+      expect(mockGitHubInstance.getRecentComments).toHaveBeenCalledWith(
+        "test",
+        "test",
+        2,
+        3,
+      );
+
       // Verify the AI was called with enhanced context
       expect(mockOpenAIInstance.getModeration).toHaveBeenCalled();
       const calledPrompt = mockOpenAIInstance.getModeration.mock.calls[0][0];
-      expect(calledPrompt).toContain('Test PR');
-      expect(calledPrompt).toContain('This is a test pull request');
-      expect(calledPrompt).toContain('Recent Comments:');
-      expect(calledPrompt).toContain('@reviewer1: PR comment 1');
-      expect(calledPrompt).toContain('New Review Comment: This looks good to me');
+      expect(calledPrompt).toContain("Test PR");
+      expect(calledPrompt).toContain("This is a test pull request");
+      expect(calledPrompt).toContain("Recent Comments:");
+      expect(calledPrompt).toContain("@reviewer1: PR comment 1");
+      expect(calledPrompt).toContain(
+        "New Review Comment: This looks good to me",
+      );
     });
 
-    it('should extract content from discussion created event', async () => {
+    it("should extract content from discussion created event", async () => {
       const context = {
-        eventName: 'discussion',
+        eventName: "discussion",
         payload: {
-          action: 'created',
+          action: "created",
           discussion: {
-            title: 'Test Discussion',
-            body: 'This is a test discussion'
-          }
-        }
+            title: "Test Discussion",
+            body: "This is a test discussion",
+          },
+        },
       };
 
-      const content = await (moderator as any).extractContent(context.eventName, context.payload, context);
-      expect(content).toBe('Discussion Title: Test Discussion\nDiscussion Body: This is a test discussion');
+      const content = await (moderator as any).extractContent(
+        context.eventName,
+        context.payload,
+        context,
+      );
+      expect(content).toBe(
+        "Discussion Title: Test Discussion\nDiscussion Body: This is a test discussion",
+      );
     });
 
-    it('should extract content from discussion comment created event', async () => {
+    it("should extract content from discussion comment created event", async () => {
       const mockGitHubInstance = {
         getFileContent: jest.fn(),
         createIssueComment: jest.fn(),
@@ -333,51 +385,67 @@ describe('Moderator', () => {
         getPullRequest: jest.fn(),
         getRecentComments: jest.fn(),
         getDiscussion: jest.fn().mockResolvedValue({
-          title: 'Test Discussion',
-          body: 'This is a test discussion'
+          title: "Test Discussion",
+          body: "This is a test discussion",
         }),
-        getRecentDiscussionComments: jest.fn().mockResolvedValue([
-          { body: 'Previous comment', created_at: '2023-01-01T00:00:00Z', user: 'user1' }
-        ])
+        getRecentDiscussionComments: jest
+          .fn()
+          .mockResolvedValue([
+            {
+              body: "Previous comment",
+              created_at: "2023-01-01T00:00:00Z",
+              user: "user1",
+            },
+          ]),
       };
 
       const mockOpenAIInstance = {
         getModeration: jest.fn(),
-        testConnection: jest.fn()
+        testConnection: jest.fn(),
       };
 
-      (require('../src/github-client').GitHubClient as jest.Mock).mockImplementation(() => mockGitHubInstance);
-      (require('../src/openai-client').OpenAIClient as jest.Mock).mockImplementation(() => mockOpenAIInstance);
+      (
+        require("../src/github-client").GitHubClient as jest.Mock
+      ).mockImplementation(() => mockGitHubInstance);
+      (
+        require("../src/openai-client").OpenAIClient as jest.Mock
+      ).mockImplementation(() => mockOpenAIInstance);
 
-      const { Moderator } = require('../src/moderator');
+      const { Moderator } = require("../src/moderator");
       const moderator = new Moderator({
-        githubToken: 'test-token',
-        openaiApiKey: 'test-key',
-        openaiBaseUrl: 'https://api.github.com',
-        model: 'gpt-4',
-        severityThreshold: 5
+        githubToken: "test-token",
+        openaiApiKey: "test-key",
+        openaiBaseUrl: "https://api.github.com",
+        model: "gpt-4",
+        severityThreshold: 5,
       });
 
       const context = {
-        eventName: 'discussion_comment',
+        eventName: "discussion_comment",
         payload: {
-          action: 'created',
+          action: "created",
           discussion: {
-            node_id: 'D_test123'
+            node_id: "D_test123",
           },
           comment: {
-            body: 'This is a test discussion comment'
-          }
-        }
+            body: "This is a test discussion comment",
+          },
+        },
       };
 
-      const content = await (moderator as any).extractContent(context.eventName, context.payload, context);
-      
-      expect(content).toContain('Discussion Title: Test Discussion');
-      expect(content).toContain('Discussion Body: This is a test discussion');
-      expect(content).toContain('Recent Comments:');
-      expect(content).toContain('@user1: Previous comment');
-      expect(content).toContain('New Discussion Comment: This is a test discussion comment');
+      const content = await (moderator as any).extractContent(
+        context.eventName,
+        context.payload,
+        context,
+      );
+
+      expect(content).toContain("Discussion Title: Test Discussion");
+      expect(content).toContain("Discussion Body: This is a test discussion");
+      expect(content).toContain("Recent Comments:");
+      expect(content).toContain("@user1: Previous comment");
+      expect(content).toContain(
+        "New Discussion Comment: This is a test discussion comment",
+      );
     });
   });
 });
