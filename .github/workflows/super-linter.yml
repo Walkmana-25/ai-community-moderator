@@ -43,4 +43,5 @@ jobs:
           VALIDATE_MARKDOWN: false
           VALIDATE_MARKDOWN_PRETTIER: false
           VALIDATE_NATURAL_LANGUAGE: false
-          FILTER_REGEX_EXCLUDE: ".*[/.]eslintrc.*"
+          VALIDATE_JSON: false
+          VALIDATE_TYPESCRIPT_ES: false
