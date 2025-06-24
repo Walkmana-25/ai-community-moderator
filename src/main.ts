@@ -2,7 +2,7 @@ import * as core from '@actions/core';
 import * as github from '@actions/github';
 import { Moderator } from './moderator';
 
-async function run(): Promise<void> {
+export async function run(): Promise<void> {
   try {
     // Get inputs
     const token = core.getInput('github-token', { required: true });
@@ -29,7 +29,12 @@ async function run(): Promise<void> {
     core.setOutput('action-taken', result.actionTaken);
     core.setOutput('reason', result.reason);
     
-    core.info(`Moderation completed: ${result.actionTaken} - ${result.reason}`);
+    // Use warning if action was taken, info if no action was taken
+    if (result.actionTaken !== 'none') {
+      core.warning(`Moderation action taken: ${result.actionTaken} - ${result.reason}`);
+    } else {
+      core.info(`Moderation completed: ${result.actionTaken} - ${result.reason}`);
+    }
   } catch (error) {
     core.setFailed(`Action failed: ${error instanceof Error ? error.message : String(error)}`);
   }
