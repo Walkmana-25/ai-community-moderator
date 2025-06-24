@@ -4,7 +4,7 @@ An AI-powered GitHub Action that helps moderate community interactions by enforc
 
 ## Features
 
-- **Automated Moderation**: Uses GitHub Models with OpenAI GPT-4.1 to analyze issues, pull requests, and comments
+- **Automated Moderation**: Uses GitHub Models with OpenAI GPT-4.1 to analyze issues, pull requests, discussions, and comments
 - **Context-Aware**: Leverages your repository's contributing guidelines and code of conduct
 - **Multiple Actions**: Can post helpful comments, hide inappropriate content, or lock discussions
 - **Configurable**: Adjustable severity thresholds and moderation actions
@@ -26,6 +26,10 @@ on:
     types: [created]
   pull_request_review_comment:
     types: [created]
+  discussion:
+    types: [created]
+  discussion_comment:
+    types: [created]
 
 jobs:
   moderate:
@@ -34,6 +38,7 @@ jobs:
       contents: read
       issues: write
       pull-requests: write
+      discussions: write  # Required for discussion moderation
       models: read  # Required for GitHub Models access
     steps:
       - uses: benbalter/ai-community-moderator@main

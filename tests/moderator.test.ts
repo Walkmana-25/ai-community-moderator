@@ -4,9 +4,11 @@ jest.mock('../src/github-client', () => ({
     getFileContent: jest.fn(),
     createIssueComment: jest.fn(),
     createPullRequestComment: jest.fn(),
+    createDiscussionComment: jest.fn(),
     hideComment: jest.fn(),
     lockIssue: jest.fn(),
     lockPullRequest: jest.fn(),
+    lockDiscussion: jest.fn(),
     limitInteractions: jest.fn()
   }))
 }));
@@ -59,9 +61,11 @@ describe('Moderator', () => {
         getFileContent: jest.fn().mockRejectedValue(new Error('File not found')),
         createIssueComment: jest.fn(),
         createPullRequestComment: jest.fn(),
+        createDiscussionComment: jest.fn(),
         hideComment: jest.fn(),
         lockIssue: jest.fn(),
         lockPullRequest: jest.fn(),
+        lockDiscussion: jest.fn(),
         limitInteractions: jest.fn()
       };
 
@@ -104,9 +108,11 @@ describe('Moderator', () => {
         getFileContent: jest.fn().mockRejectedValue(new Error('File not found')),
         createIssueComment: jest.fn().mockResolvedValue(undefined),
         createPullRequestComment: jest.fn(),
+        createDiscussionComment: jest.fn(),
         hideComment: jest.fn(),
         lockIssue: jest.fn(),
         lockPullRequest: jest.fn(),
+        lockDiscussion: jest.fn(),
         limitInteractions: jest.fn()
       };
 
@@ -148,6 +154,58 @@ describe('Moderator', () => {
         'test',
         1,
         'Please review our community guidelines.'
+      );
+    });
+
+    it('should process discussion created event', async () => {
+      const mockGitHubInstance = {
+        getFileContent: jest.fn().mockRejectedValue(new Error('File not found')),
+        createIssueComment: jest.fn(),
+        createPullRequestComment: jest.fn(),
+        createDiscussionComment: jest.fn().mockResolvedValue(undefined),
+        hideComment: jest.fn(),
+        lockIssue: jest.fn(),
+        lockPullRequest: jest.fn(),
+        lockDiscussion: jest.fn(),
+        limitInteractions: jest.fn()
+      };
+
+      const mockOpenAIInstance = {
+        getModeration: jest.fn().mockResolvedValue({
+          shouldTakeAction: true,
+          actionType: 'comment',
+          severity: 6,
+          reason: 'Discussion needs guidelines reminder',
+          response: 'Welcome to discussions! Please follow our community guidelines.'
+        }),
+        testConnection: jest.fn()
+      };
+
+      (MockedGitHubClient as any).mockImplementation(() => mockGitHubInstance);
+      (MockedOpenAIClient as any).mockImplementation(() => mockOpenAIInstance);
+
+      const testModerator = new Moderator(config);
+
+      const context = {
+        eventName: 'discussion',
+        payload: {
+          action: 'created',
+          discussion: {
+            title: 'Test Discussion',
+            body: 'This is a test discussion',
+            node_id: 'D_test123'
+          }
+        },
+        repo: { owner: 'test', repo: 'test' }
+      } as any;
+
+      const result = await testModerator.processEvent(context);
+
+      expect(result.actionTaken).toBe('comment');
+      expect(result.reason).toBe('Discussion needs guidelines reminder');
+      expect(mockGitHubInstance.createDiscussionComment).toHaveBeenCalledWith(
+        'D_test123',
+        'Welcome to discussions! Please follow our community guidelines.'
       );
     });
   });
@@ -198,6 +256,37 @@ describe('Moderator', () => {
 
       const content = (moderator as any).extractContent(context.eventName, context.payload);
       expect(content).toBe('Comment: This is a test comment');
+    });
+
+    it('should extract content from discussion created event', () => {
+      const context = {
+        eventName: 'discussion',
+        payload: {
+          action: 'created',
+          discussion: {
+            title: 'Test Discussion',
+            body: 'This is a test discussion'
+          }
+        }
+      };
+
+      const content = (moderator as any).extractContent(context.eventName, context.payload);
+      expect(content).toBe('Discussion Title: Test Discussion\nDiscussion Body: This is a test discussion');
+    });
+
+    it('should extract content from discussion comment created event', () => {
+      const context = {
+        eventName: 'discussion_comment',
+        payload: {
+          action: 'created',
+          comment: {
+            body: 'This is a test discussion comment'
+          }
+        }
+      };
+
+      const content = (moderator as any).extractContent(context.eventName, context.payload);
+      expect(content).toBe('Discussion Comment: This is a test discussion comment');
     });
   });
 });

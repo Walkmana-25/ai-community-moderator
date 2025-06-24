@@ -112,4 +112,36 @@ describe('GitHubClient', () => {
       });
     });
   });
+
+  describe('createDiscussionComment', () => {
+    it('should create discussion comment using GraphQL', async () => {
+      const { Octokit } = require('@octokit/rest');
+      const mockInstance = new Octokit();
+      
+      mockInstance.graphql.mockResolvedValue({});
+
+      await client.createDiscussionComment('D_test123', 'test discussion comment');
+
+      expect(mockInstance.graphql).toHaveBeenCalledWith(
+        expect.stringContaining('addDiscussionComment'),
+        { discussionId: 'D_test123', body: 'test discussion comment' }
+      );
+    });
+  });
+
+  describe('lockDiscussion', () => {
+    it('should lock discussion using GraphQL', async () => {
+      const { Octokit } = require('@octokit/rest');
+      const mockInstance = new Octokit();
+      
+      mockInstance.graphql.mockResolvedValue({});
+
+      await client.lockDiscussion('D_test123');
+
+      expect(mockInstance.graphql).toHaveBeenCalledWith(
+        expect.stringContaining('lockLockable'),
+        { discussionId: 'D_test123' }
+      );
+    });
+  });
 });
