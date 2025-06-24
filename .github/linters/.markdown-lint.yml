@@ -1,0 +1,9 @@
+# Markdown linting rules
+# Disable line length rule as it's too restrictive for documentation
+MD013: false
+
+# Allow duplicate heading content (common in documentation)
+MD024: false
+
+# Allow inline HTML (needed for GitHub-flavored markdown features)
+MD033: false
