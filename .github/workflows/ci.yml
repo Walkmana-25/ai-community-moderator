@@ -31,6 +31,9 @@ jobs:
     - name: Package
       run: npm run package
 
+    - name: Lint
+      run: npm run lint
+
   check-dist:
     runs-on: ubuntu-latest
     
