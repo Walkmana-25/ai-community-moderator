@@ -155,6 +155,15 @@ npm run build
 npm test
 ```
 
+### Linting
+
+Code style is enforced using ESLint:
+
+```bash
+npm run lint          # Check for linting issues
+npm run lint:fix      # Automatically fix issues
+```
+
 ### Packaging
 
 ```bash

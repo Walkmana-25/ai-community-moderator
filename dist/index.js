@@ -533,7 +533,7 @@ class Moderator {
         contextContent += `New ${commentType}: ${payload.comment.body}`;
         return contextContent;
     }
-    async extractDiscussionCommentContent(payload, context) {
+    async extractDiscussionCommentContent(payload, _context) {
         let contextContent = '';
         try {
             // Get parent discussion context
