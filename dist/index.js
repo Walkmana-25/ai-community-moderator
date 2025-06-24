@@ -246,6 +246,7 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.run = run;
 const core = __importStar(__nccwpck_require__(7484));
 const github = __importStar(__nccwpck_require__(3228));
 const moderator_1 = __nccwpck_require__(3967);
@@ -271,7 +272,13 @@ async function run() {
         // Set outputs
         core.setOutput('action-taken', result.actionTaken);
         core.setOutput('reason', result.reason);
-        core.info(`Moderation completed: ${result.actionTaken} - ${result.reason}`);
+        // Use warning if action was taken, info if no action was taken
+        if (result.actionTaken !== 'none') {
+            core.warning(`Moderation action taken: ${result.actionTaken} - ${result.reason}`);
+        }
+        else {
+            core.info(`Moderation completed: ${result.actionTaken} - ${result.reason}`);
+        }
     }
     catch (error) {
         core.setFailed(`Action failed: ${error instanceof Error ? error.message : String(error)}`);
