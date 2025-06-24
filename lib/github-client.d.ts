@@ -10,4 +10,26 @@ export declare class GitHubClient {
     limitInteractions(owner: string, repo: string, limit: 'existing_users' | 'contributors_only' | 'collaborators_only'): Promise<void>;
     createDiscussionComment(discussionNodeId: string, body: string): Promise<void>;
     lockDiscussion(discussionNodeId: string): Promise<void>;
+    getIssue(owner: string, repo: string, issueNumber: number): Promise<{
+        title: string;
+        body: string | null;
+    }>;
+    getPullRequest(owner: string, repo: string, pullNumber: number): Promise<{
+        title: string;
+        body: string | null;
+    }>;
+    getRecentComments(owner: string, repo: string, issueNumber: number, limit?: number): Promise<Array<{
+        body: string;
+        created_at: string;
+        user: string;
+    }>>;
+    getDiscussion(discussionNodeId: string): Promise<{
+        title: string;
+        body: string | null;
+    }>;
+    getRecentDiscussionComments(discussionNodeId: string, limit?: number): Promise<Array<{
+        body: string;
+        created_at: string;
+        user: string;
+    }>>;
 }

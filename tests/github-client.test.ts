@@ -9,7 +9,12 @@ jest.mock('@octokit/rest', () => {
       },
       issues: {
         createComment: jest.fn(),
-        lock: jest.fn()
+        lock: jest.fn(),
+        get: jest.fn(),
+        listComments: jest.fn()
+      },
+      pulls: {
+        get: jest.fn()
       },
       interactions: {
         setRestrictionsForRepo: jest.fn()
@@ -113,6 +118,157 @@ describe('GitHubClient', () => {
     });
   });
 
+  describe('getIssue', () => {
+    it('should return issue title and body', async () => {
+      const { Octokit } = require('@octokit/rest');
+      const mockInstance = new Octokit();
+      
+      mockInstance.rest.issues.get.mockResolvedValue({
+        data: {
+          title: 'Test Issue',
+          body: 'This is a test issue'
+        }
+      });
+
+      const result = await client.getIssue('owner', 'repo', 1);
+
+      expect(result).toEqual({
+        title: 'Test Issue',
+        body: 'This is a test issue'
+      });
+      expect(mockInstance.rest.issues.get).toHaveBeenCalledWith({
+        owner: 'owner',
+        repo: 'repo',
+        issue_number: 1
+      });
+    });
+
+    it('should handle null body', async () => {
+      const { Octokit } = require('@octokit/rest');
+      const mockInstance = new Octokit();
+      
+      mockInstance.rest.issues.get.mockResolvedValue({
+        data: {
+          title: 'Test Issue',
+          body: null
+        }
+      });
+
+      const result = await client.getIssue('owner', 'repo', 1);
+
+      expect(result).toEqual({
+        title: 'Test Issue',
+        body: null
+      });
+    });
+  });
+
+  describe('getPullRequest', () => {
+    it('should return PR title and body', async () => {
+      const { Octokit } = require('@octokit/rest');
+      const mockInstance = new Octokit();
+      
+      mockInstance.rest.pulls.get.mockResolvedValue({
+        data: {
+          title: 'Test PR',
+          body: 'This is a test PR'
+        }
+      });
+
+      const result = await client.getPullRequest('owner', 'repo', 1);
+
+      expect(result).toEqual({
+        title: 'Test PR',
+        body: 'This is a test PR'
+      });
+      expect(mockInstance.rest.pulls.get).toHaveBeenCalledWith({
+        owner: 'owner',
+        repo: 'repo',
+        pull_number: 1
+      });
+    });
+  });
+
+  describe('getRecentComments', () => {
+    it('should return recent comments in chronological order', async () => {
+      const { Octokit } = require('@octokit/rest');
+      const mockInstance = new Octokit();
+      
+      mockInstance.rest.issues.listComments.mockResolvedValue({
+        data: [
+          {
+            body: 'Third comment',
+            created_at: '2023-01-03T00:00:00Z',
+            user: { login: 'user3' }
+          },
+          {
+            body: 'Second comment',
+            created_at: '2023-01-02T00:00:00Z',
+            user: { login: 'user2' }
+          },
+          {
+            body: 'First comment',
+            created_at: '2023-01-01T00:00:00Z',
+            user: { login: 'user1' }
+          }
+        ]
+      });
+
+      const result = await client.getRecentComments('owner', 'repo', 1, 3);
+
+      expect(result).toEqual([
+        {
+          body: 'First comment',
+          created_at: '2023-01-01T00:00:00Z',
+          user: 'user1'
+        },
+        {
+          body: 'Second comment',
+          created_at: '2023-01-02T00:00:00Z',
+          user: 'user2'
+        },
+        {
+          body: 'Third comment',
+          created_at: '2023-01-03T00:00:00Z',
+          user: 'user3'
+        }
+      ]);
+      expect(mockInstance.rest.issues.listComments).toHaveBeenCalledWith({
+        owner: 'owner',
+        repo: 'repo',
+        issue_number: 1,
+        sort: 'created',
+        direction: 'desc',
+        per_page: 3
+      });
+    });
+
+    it('should handle comments with null users', async () => {
+      const { Octokit } = require('@octokit/rest');
+      const mockInstance = new Octokit();
+      
+      mockInstance.rest.issues.listComments.mockResolvedValue({
+        data: [
+          {
+            body: 'Comment from unknown user',
+            created_at: '2023-01-01T00:00:00Z',
+            user: null
+          }
+        ]
+      });
+
+      const result = await client.getRecentComments('owner', 'repo', 1, 1);
+
+      expect(result).toEqual([
+        {
+          body: 'Comment from unknown user',
+          created_at: '2023-01-01T00:00:00Z',
+          user: 'unknown'
+        }
+      ]);
+    });
+  });
+
   describe('createDiscussionComment', () => {
     it('should create discussion comment using GraphQL', async () => {
       const { Octokit } = require('@octokit/rest');
@@ -142,6 +298,124 @@ describe('GitHubClient', () => {
         expect.stringContaining('lockLockable'),
         { discussionId: 'D_test123' }
       );
+    });
+  });
+
+  describe('getDiscussion', () => {
+    it('should return discussion title and body', async () => {
+      const { Octokit } = require('@octokit/rest');
+      const mockInstance = new Octokit();
+      
+      mockInstance.graphql.mockResolvedValue({
+        node: {
+          title: 'Test Discussion',
+          body: 'This is a test discussion'
+        }
+      });
+
+      const result = await client.getDiscussion('D_test123');
+
+      expect(result).toEqual({
+        title: 'Test Discussion',
+        body: 'This is a test discussion'
+      });
+      expect(mockInstance.graphql).toHaveBeenCalledWith(
+        expect.stringContaining('node(id: $discussionId)'),
+        { discussionId: 'D_test123' }
+      );
+    });
+
+    it('should handle null body', async () => {
+      const { Octokit } = require('@octokit/rest');
+      const mockInstance = new Octokit();
+      
+      mockInstance.graphql.mockResolvedValue({
+        node: {
+          title: 'Test Discussion',
+          body: null
+        }
+      });
+
+      const result = await client.getDiscussion('D_test123');
+
+      expect(result).toEqual({
+        title: 'Test Discussion',
+        body: null
+      });
+    });
+  });
+
+  describe('getRecentDiscussionComments', () => {
+    it('should return recent discussion comments', async () => {
+      const { Octokit } = require('@octokit/rest');
+      const mockInstance = new Octokit();
+      
+      mockInstance.graphql.mockResolvedValue({
+        node: {
+          comments: {
+            nodes: [
+              {
+                body: 'First comment',
+                createdAt: '2023-01-01T00:00:00Z',
+                author: { login: 'user1' }
+              },
+              {
+                body: 'Second comment',
+                createdAt: '2023-01-02T00:00:00Z',
+                author: { login: 'user2' }
+              }
+            ]
+          }
+        }
+      });
+
+      const result = await client.getRecentDiscussionComments('D_test123', 2);
+
+      expect(result).toEqual([
+        {
+          body: 'First comment',
+          created_at: '2023-01-01T00:00:00Z',
+          user: 'user1'
+        },
+        {
+          body: 'Second comment',
+          created_at: '2023-01-02T00:00:00Z',
+          user: 'user2'
+        }
+      ]);
+      expect(mockInstance.graphql).toHaveBeenCalledWith(
+        expect.stringContaining('comments(last: $limit)'),
+        { discussionId: 'D_test123', limit: 2 }
+      );
+    });
+
+    it('should handle comments with null authors', async () => {
+      const { Octokit } = require('@octokit/rest');
+      const mockInstance = new Octokit();
+      
+      mockInstance.graphql.mockResolvedValue({
+        node: {
+          comments: {
+            nodes: [
+              {
+                body: 'Comment from unknown user',
+                createdAt: '2023-01-01T00:00:00Z',
+                author: null
+              }
+            ]
+          }
+        }
+      });
+
+      const result = await client.getRecentDiscussionComments('D_test123', 1);
+
+      expect(result).toEqual([
+        {
+          body: 'Comment from unknown user',
+          created_at: '2023-01-01T00:00:00Z',
+          user: 'unknown'
+        }
+      ]);
     });
   });
 });

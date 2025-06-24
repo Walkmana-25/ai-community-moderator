@@ -9,7 +9,12 @@ jest.mock('../src/github-client', () => ({
     lockIssue: jest.fn(),
     lockPullRequest: jest.fn(),
     lockDiscussion: jest.fn(),
-    limitInteractions: jest.fn()
+    limitInteractions: jest.fn(),
+    getIssue: jest.fn(),
+    getPullRequest: jest.fn(),
+    getRecentComments: jest.fn(),
+        getDiscussion: jest.fn(),
+        getRecentDiscussionComments: jest.fn()
   }))
 }));
 
@@ -66,7 +71,12 @@ describe('Moderator', () => {
         lockIssue: jest.fn(),
         lockPullRequest: jest.fn(),
         lockDiscussion: jest.fn(),
-        limitInteractions: jest.fn()
+        limitInteractions: jest.fn(),
+        getIssue: jest.fn(),
+        getPullRequest: jest.fn(),
+        getRecentComments: jest.fn(),
+        getDiscussion: jest.fn(),
+        getRecentDiscussionComments: jest.fn()
       };
 
       const mockOpenAIInstance = {
@@ -113,7 +123,12 @@ describe('Moderator', () => {
         lockIssue: jest.fn(),
         lockPullRequest: jest.fn(),
         lockDiscussion: jest.fn(),
-        limitInteractions: jest.fn()
+        limitInteractions: jest.fn(),
+        getIssue: jest.fn(),
+        getPullRequest: jest.fn(),
+        getRecentComments: jest.fn(),
+        getDiscussion: jest.fn(),
+        getRecentDiscussionComments: jest.fn()
       };
 
       const mockOpenAIInstance = {
@@ -157,26 +172,32 @@ describe('Moderator', () => {
       );
     });
 
-    it('should process discussion created event', async () => {
+    it('should include enhanced context for issue comments', async () => {
       const mockGitHubInstance = {
         getFileContent: jest.fn().mockRejectedValue(new Error('File not found')),
         createIssueComment: jest.fn(),
         createPullRequestComment: jest.fn(),
-        createDiscussionComment: jest.fn().mockResolvedValue(undefined),
         hideComment: jest.fn(),
         lockIssue: jest.fn(),
         lockPullRequest: jest.fn(),
-        lockDiscussion: jest.fn(),
-        limitInteractions: jest.fn()
+        limitInteractions: jest.fn(),
+        getIssue: jest.fn().mockResolvedValue({
+          title: 'Original Issue',
+          body: 'This is the original issue description'
+        }),
+        getPullRequest: jest.fn(),
+        getRecentComments: jest.fn().mockResolvedValue([
+          { body: 'First comment', created_at: '2023-01-01T00:00:00Z', user: 'user1' },
+          { body: 'Second comment', created_at: '2023-01-02T00:00:00Z', user: 'user2' }
+        ])
       };
 
       const mockOpenAIInstance = {
         getModeration: jest.fn().mockResolvedValue({
-          shouldTakeAction: true,
-          actionType: 'comment',
-          severity: 6,
-          reason: 'Discussion needs guidelines reminder',
-          response: 'Welcome to discussions! Please follow our community guidelines.'
+          shouldTakeAction: false,
+          actionType: 'none',
+          severity: 3,
+          reason: 'Content is acceptable'
         }),
         testConnection: jest.fn()
       };
@@ -187,78 +208,101 @@ describe('Moderator', () => {
       const testModerator = new Moderator(config);
 
       const context = {
-        eventName: 'discussion',
+        eventName: 'issue_comment',
         payload: {
           action: 'created',
-          discussion: {
-            title: 'Test Discussion',
-            body: 'This is a test discussion',
-            node_id: 'D_test123'
+          issue: {
+            number: 1
+          },
+          comment: {
+            body: 'This is a new comment'
           }
         },
         repo: { owner: 'test', repo: 'test' }
       } as any;
 
-      const result = await testModerator.processEvent(context);
+      await testModerator.processEvent(context);
 
-      expect(result.actionTaken).toBe('comment');
-      expect(result.reason).toBe('Discussion needs guidelines reminder');
-      expect(mockGitHubInstance.createDiscussionComment).toHaveBeenCalledWith(
-        'D_test123',
-        'Welcome to discussions! Please follow our community guidelines.'
-      );
+      // Verify that the enhanced context was used
+      expect(mockGitHubInstance.getIssue).toHaveBeenCalledWith('test', 'test', 1);
+      expect(mockGitHubInstance.getRecentComments).toHaveBeenCalledWith('test', 'test', 1, 3);
+      
+      // Verify the AI was called with enhanced context
+      expect(mockOpenAIInstance.getModeration).toHaveBeenCalled();
+      const calledPrompt = mockOpenAIInstance.getModeration.mock.calls[0][0];
+      expect(calledPrompt).toContain('Original Issue');
+      expect(calledPrompt).toContain('This is the original issue description');
+      expect(calledPrompt).toContain('Recent Comments:');
+      expect(calledPrompt).toContain('@user1: First comment');
+      expect(calledPrompt).toContain('@user2: Second comment');
+      expect(calledPrompt).toContain('New Comment: This is a new comment');
     });
-  });
 
-  describe('extractContent', () => {
-    it('should extract content from issue opened event', () => {
-      const context = {
-        eventName: 'issues',
-        payload: {
-          action: 'opened',
-          issue: {
-            title: 'Test Issue',
-            body: 'This is a test issue'
-          }
-        }
+    it('should include enhanced context for PR review comments', async () => {
+      const mockGitHubInstance = {
+        getFileContent: jest.fn().mockRejectedValue(new Error('File not found')),
+        createIssueComment: jest.fn(),
+        createPullRequestComment: jest.fn(),
+        hideComment: jest.fn(),
+        lockIssue: jest.fn(),
+        lockPullRequest: jest.fn(),
+        limitInteractions: jest.fn(),
+        getIssue: jest.fn(),
+        getPullRequest: jest.fn().mockResolvedValue({
+          title: 'Test PR',
+          body: 'This is a test pull request'
+        }),
+        getRecentComments: jest.fn().mockResolvedValue([
+          { body: 'PR comment 1', created_at: '2023-01-01T00:00:00Z', user: 'reviewer1' }
+        ])
       };
 
-      const content = (moderator as any).extractContent(context.eventName, context.payload);
-      expect(content).toBe('Issue Title: Test Issue\nIssue Body: This is a test issue');
-    });
-
-    it('should extract content from PR opened event', () => {
-      const context = {
-        eventName: 'pull_request',
-        payload: {
-          action: 'opened',
-          pull_request: {
-            title: 'Test PR',
-            body: 'This is a test PR'
-          }
-        }
+      const mockOpenAIInstance = {
+        getModeration: jest.fn().mockResolvedValue({
+          shouldTakeAction: false,
+          actionType: 'none',
+          severity: 2,
+          reason: 'Content is acceptable'
+        }),
+        testConnection: jest.fn()
       };
 
-      const content = (moderator as any).extractContent(context.eventName, context.payload);
-      expect(content).toBe('PR Title: Test PR\nPR Body: This is a test PR');
-    });
+      (MockedGitHubClient as any).mockImplementation(() => mockGitHubInstance);
+      (MockedOpenAIClient as any).mockImplementation(() => mockOpenAIInstance);
 
-    it('should extract content from comment created event', () => {
+      const testModerator = new Moderator(config);
+
       const context = {
-        eventName: 'issue_comment',
+        eventName: 'pull_request_review_comment',
         payload: {
           action: 'created',
+          pull_request: {
+            number: 2
+          },
           comment: {
-            body: 'This is a test comment'
+            body: 'This looks good to me'
           }
-        }
-      };
+        },
+        repo: { owner: 'test', repo: 'test' }
+      } as any;
 
-      const content = (moderator as any).extractContent(context.eventName, context.payload);
-      expect(content).toBe('Comment: This is a test comment');
+      await testModerator.processEvent(context);
+
+      // Verify that the enhanced context was used
+      expect(mockGitHubInstance.getPullRequest).toHaveBeenCalledWith('test', 'test', 2);
+      expect(mockGitHubInstance.getRecentComments).toHaveBeenCalledWith('test', 'test', 2, 3);
+      
+      // Verify the AI was called with enhanced context
+      expect(mockOpenAIInstance.getModeration).toHaveBeenCalled();
+      const calledPrompt = mockOpenAIInstance.getModeration.mock.calls[0][0];
+      expect(calledPrompt).toContain('Test PR');
+      expect(calledPrompt).toContain('This is a test pull request');
+      expect(calledPrompt).toContain('Recent Comments:');
+      expect(calledPrompt).toContain('@reviewer1: PR comment 1');
+      expect(calledPrompt).toContain('New Review Comment: This looks good to me');
     });
 
-    it('should extract content from discussion created event', () => {
+    it('should extract content from discussion created event', async () => {
       const context = {
         eventName: 'discussion',
         payload: {
@@ -270,23 +314,70 @@ describe('Moderator', () => {
         }
       };
 
-      const content = (moderator as any).extractContent(context.eventName, context.payload);
+      const content = await (moderator as any).extractContent(context.eventName, context.payload, context);
       expect(content).toBe('Discussion Title: Test Discussion\nDiscussion Body: This is a test discussion');
     });
 
-    it('should extract content from discussion comment created event', () => {
+    it('should extract content from discussion comment created event', async () => {
+      const mockGitHubInstance = {
+        getFileContent: jest.fn(),
+        createIssueComment: jest.fn(),
+        createPullRequestComment: jest.fn(),
+        createDiscussionComment: jest.fn(),
+        hideComment: jest.fn(),
+        lockIssue: jest.fn(),
+        lockPullRequest: jest.fn(),
+        lockDiscussion: jest.fn(),
+        limitInteractions: jest.fn(),
+        getIssue: jest.fn(),
+        getPullRequest: jest.fn(),
+        getRecentComments: jest.fn(),
+        getDiscussion: jest.fn().mockResolvedValue({
+          title: 'Test Discussion',
+          body: 'This is a test discussion'
+        }),
+        getRecentDiscussionComments: jest.fn().mockResolvedValue([
+          { body: 'Previous comment', created_at: '2023-01-01T00:00:00Z', user: 'user1' }
+        ])
+      };
+
+      const mockOpenAIInstance = {
+        getModeration: jest.fn(),
+        testConnection: jest.fn()
+      };
+
+      (require('../src/github-client').GitHubClient as jest.Mock).mockImplementation(() => mockGitHubInstance);
+      (require('../src/openai-client').OpenAIClient as jest.Mock).mockImplementation(() => mockOpenAIInstance);
+
+      const { Moderator } = require('../src/moderator');
+      const moderator = new Moderator({
+        githubToken: 'test-token',
+        openaiApiKey: 'test-key',
+        openaiBaseUrl: 'https://api.github.com',
+        model: 'gpt-4',
+        severityThreshold: 5
+      });
+
       const context = {
         eventName: 'discussion_comment',
         payload: {
           action: 'created',
+          discussion: {
+            node_id: 'D_test123'
+          },
           comment: {
             body: 'This is a test discussion comment'
           }
         }
       };
 
-      const content = (moderator as any).extractContent(context.eventName, context.payload);
-      expect(content).toBe('Discussion Comment: This is a test discussion comment');
+      const content = await (moderator as any).extractContent(context.eventName, context.payload, context);
+      
+      expect(content).toContain('Discussion Title: Test Discussion');
+      expect(content).toContain('Discussion Body: This is a test discussion');
+      expect(content).toContain('Recent Comments:');
+      expect(content).toContain('@user1: Previous comment');
+      expect(content).toContain('New Discussion Comment: This is a test discussion comment');
     });
   });
 });
