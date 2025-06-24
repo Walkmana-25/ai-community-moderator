@@ -1,7 +1,7 @@
 ---
 name: Super Linter
 
-on:
+"on":
   push:
     branches: [main]
   pull_request:
@@ -11,7 +11,7 @@ jobs:
   super-lint:
     name: Lint Code Base
     runs-on: ubuntu-latest
-    
+
     permissions:
       contents: read
       packages: read
@@ -22,7 +22,8 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
         with:
-          # Full git history is needed to get a proper list of changed files within `super-linter`
+          # Full git history is needed to get a proper
+          # list of changed files within `super-linter`
           fetch-depth: 0
 
       - name: Run Super-Linter
@@ -32,9 +33,11 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           # The following are Super-Linter environment variables
           DEFAULT_BRANCH: main
-          # Will parse the entire repository and find all files to validate across all types
+          # Will parse the entire repository and find all files
+          # to validate across all types
           VALIDATE_ALL_CODEBASE: true
-          # Linters that should be disabled (if any issues are found, we can enable them gradually)
+          # Linters that should be disabled (if any issues are found,
+          # we can enable them gradually)
           VALIDATE_JAVASCRIPT_ES: true
           VALIDATE_TYPESCRIPT_ES: true
           VALIDATE_JSON: true

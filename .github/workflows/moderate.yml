@@ -1,6 +1,7 @@
+---
 name: AI Community Moderator
 
-on:
+"on":
   issues:
     types: [opened]
   pull_request:
@@ -21,7 +22,7 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-        
+
       - name: Moderate with AI
         uses: ./
         with:
