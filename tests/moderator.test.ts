@@ -12,7 +12,9 @@ jest.mock('../src/github-client', () => ({
     limitInteractions: jest.fn(),
     getIssue: jest.fn(),
     getPullRequest: jest.fn(),
-    getRecentComments: jest.fn()
+    getRecentComments: jest.fn(),
+        getDiscussion: jest.fn(),
+        getRecentDiscussionComments: jest.fn()
   }))
 }));
 
@@ -72,7 +74,9 @@ describe('Moderator', () => {
         limitInteractions: jest.fn(),
         getIssue: jest.fn(),
         getPullRequest: jest.fn(),
-        getRecentComments: jest.fn()
+        getRecentComments: jest.fn(),
+        getDiscussion: jest.fn(),
+        getRecentDiscussionComments: jest.fn()
       };
 
       const mockOpenAIInstance = {
@@ -122,7 +126,9 @@ describe('Moderator', () => {
         limitInteractions: jest.fn(),
         getIssue: jest.fn(),
         getPullRequest: jest.fn(),
-        getRecentComments: jest.fn()
+        getRecentComments: jest.fn(),
+        getDiscussion: jest.fn(),
+        getRecentDiscussionComments: jest.fn()
       };
 
       const mockOpenAIInstance = {
@@ -165,11 +171,6 @@ describe('Moderator', () => {
         'Please review our community guidelines.'
       );
     });
-        lockDiscussion: jest.fn(),
-        limitInteractions: jest.fn(),
-        getIssue: jest.fn(),
-        getPullRequest: jest.fn(),
-        getRecentComments: jest.fn()
 
     it('should include enhanced context for issue comments', async () => {
       const mockGitHubInstance = {
@@ -301,7 +302,7 @@ describe('Moderator', () => {
       expect(calledPrompt).toContain('New Review Comment: This looks good to me');
     });
 
-    it('should extract content from discussion created event', () => {
+    it('should extract content from discussion created event', async () => {
       const context = {
         eventName: 'discussion',
         payload: {
@@ -313,23 +314,70 @@ describe('Moderator', () => {
         }
       };
 
-      const content = (moderator as any).extractContent(context.eventName, context.payload);
+      const content = await (moderator as any).extractContent(context.eventName, context.payload, context);
       expect(content).toBe('Discussion Title: Test Discussion\nDiscussion Body: This is a test discussion');
     });
 
-    it('should extract content from discussion comment created event', () => {
+    it('should extract content from discussion comment created event', async () => {
+      const mockGitHubInstance = {
+        getFileContent: jest.fn(),
+        createIssueComment: jest.fn(),
+        createPullRequestComment: jest.fn(),
+        createDiscussionComment: jest.fn(),
+        hideComment: jest.fn(),
+        lockIssue: jest.fn(),
+        lockPullRequest: jest.fn(),
+        lockDiscussion: jest.fn(),
+        limitInteractions: jest.fn(),
+        getIssue: jest.fn(),
+        getPullRequest: jest.fn(),
+        getRecentComments: jest.fn(),
+        getDiscussion: jest.fn().mockResolvedValue({
+          title: 'Test Discussion',
+          body: 'This is a test discussion'
+        }),
+        getRecentDiscussionComments: jest.fn().mockResolvedValue([
+          { body: 'Previous comment', created_at: '2023-01-01T00:00:00Z', user: 'user1' }
+        ])
+      };
+
+      const mockOpenAIInstance = {
+        getModeration: jest.fn(),
+        testConnection: jest.fn()
+      };
+
+      (require('../src/github-client').GitHubClient as jest.Mock).mockImplementation(() => mockGitHubInstance);
+      (require('../src/openai-client').OpenAIClient as jest.Mock).mockImplementation(() => mockOpenAIInstance);
+
+      const { Moderator } = require('../src/moderator');
+      const moderator = new Moderator({
+        githubToken: 'test-token',
+        openaiApiKey: 'test-key',
+        openaiBaseUrl: 'https://api.github.com',
+        model: 'gpt-4',
+        severityThreshold: 5
+      });
+
       const context = {
         eventName: 'discussion_comment',
         payload: {
           action: 'created',
+          discussion: {
+            node_id: 'D_test123'
+          },
           comment: {
             body: 'This is a test discussion comment'
           }
         }
       };
 
-      const content = (moderator as any).extractContent(context.eventName, context.payload);
-      expect(content).toBe('Discussion Comment: This is a test discussion comment');
+      const content = await (moderator as any).extractContent(context.eventName, context.payload, context);
+      
+      expect(content).toContain('Discussion Title: Test Discussion');
+      expect(content).toContain('Discussion Body: This is a test discussion');
+      expect(content).toContain('Recent Comments:');
+      expect(content).toContain('@user1: Previous comment');
+      expect(content).toContain('New Discussion Comment: This is a test discussion comment');
     });
   });
 });

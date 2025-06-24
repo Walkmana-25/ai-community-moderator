@@ -300,4 +300,122 @@ describe('GitHubClient', () => {
       );
     });
   });
+
+  describe('getDiscussion', () => {
+    it('should return discussion title and body', async () => {
+      const { Octokit } = require('@octokit/rest');
+      const mockInstance = new Octokit();
+      
+      mockInstance.graphql.mockResolvedValue({
+        node: {
+          title: 'Test Discussion',
+          body: 'This is a test discussion'
+        }
+      });
+
+      const result = await client.getDiscussion('D_test123');
+
+      expect(result).toEqual({
+        title: 'Test Discussion',
+        body: 'This is a test discussion'
+      });
+      expect(mockInstance.graphql).toHaveBeenCalledWith(
+        expect.stringContaining('node(id: $discussionId)'),
+        { discussionId: 'D_test123' }
+      );
+    });
+
+    it('should handle null body', async () => {
+      const { Octokit } = require('@octokit/rest');
+      const mockInstance = new Octokit();
+      
+      mockInstance.graphql.mockResolvedValue({
+        node: {
+          title: 'Test Discussion',
+          body: null
+        }
+      });
+
+      const result = await client.getDiscussion('D_test123');
+
+      expect(result).toEqual({
+        title: 'Test Discussion',
+        body: null
+      });
+    });
+  });
+
+  describe('getRecentDiscussionComments', () => {
+    it('should return recent discussion comments', async () => {
+      const { Octokit } = require('@octokit/rest');
+      const mockInstance = new Octokit();
+      
+      mockInstance.graphql.mockResolvedValue({
+        node: {
+          comments: {
+            nodes: [
+              {
+                body: 'First comment',
+                createdAt: '2023-01-01T00:00:00Z',
+                author: { login: 'user1' }
+              },
+              {
+                body: 'Second comment',
+                createdAt: '2023-01-02T00:00:00Z',
+                author: { login: 'user2' }
+              }
+            ]
+          }
+        }
+      });
+
+      const result = await client.getRecentDiscussionComments('D_test123', 2);
+
+      expect(result).toEqual([
+        {
+          body: 'First comment',
+          created_at: '2023-01-01T00:00:00Z',
+          user: 'user1'
+        },
+        {
+          body: 'Second comment',
+          created_at: '2023-01-02T00:00:00Z',
+          user: 'user2'
+        }
+      ]);
+      expect(mockInstance.graphql).toHaveBeenCalledWith(
+        expect.stringContaining('comments(last: $limit)'),
+        { discussionId: 'D_test123', limit: 2 }
+      );
+    });
+
+    it('should handle comments with null authors', async () => {
+      const { Octokit } = require('@octokit/rest');
+      const mockInstance = new Octokit();
+      
+      mockInstance.graphql.mockResolvedValue({
+        node: {
+          comments: {
+            nodes: [
+              {
+                body: 'Comment from unknown user',
+                createdAt: '2023-01-01T00:00:00Z',
+                author: null
+              }
+            ]
+          }
+        }
+      });
+
+      const result = await client.getRecentDiscussionComments('D_test123', 1);
+
+      expect(result).toEqual([
+        {
+          body: 'Comment from unknown user',
+          created_at: '2023-01-01T00:00:00Z',
+          user: 'unknown'
+        }
+      ]);
+    });
+  });
 });

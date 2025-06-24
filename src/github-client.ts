@@ -219,4 +219,60 @@ export class GitHubClient {
       throw error;
     }
   }
+
+  async getDiscussion(discussionNodeId: string): Promise<{title: string, body: string | null}> {
+    try {
+      const result = await this.octokit.graphql(`
+        query($discussionId: ID!) {
+          node(id: $discussionId) {
+            ... on Discussion {
+              title
+              body
+            }
+          }
+        }
+      `, { discussionId: discussionNodeId });
+
+      const discussion = (result as any).node;
+      return {
+        title: discussion.title,
+        body: discussion.body || null
+      };
+    } catch (error) {
+      core.debug(`Failed to get discussion ${discussionNodeId}: ${error}`);
+      throw error;
+    }
+  }
+
+  async getRecentDiscussionComments(discussionNodeId: string, limit: number = 3): Promise<Array<{body: string, created_at: string, user: string}>> {
+    try {
+      const result = await this.octokit.graphql(`
+        query($discussionId: ID!, $limit: Int!) {
+          node(id: $discussionId) {
+            ... on Discussion {
+              comments(last: $limit) {
+                nodes {
+                  body
+                  createdAt
+                  author {
+                    login
+                  }
+                }
+              }
+            }
+          }
+        }
+      `, { discussionId: discussionNodeId, limit });
+
+      const discussion = (result as any).node;
+      return discussion.comments.nodes.map((comment: any) => ({
+        body: comment.body || '',
+        created_at: comment.createdAt,
+        user: comment.author?.login || 'unknown'
+      }));
+    } catch (error) {
+      core.debug(`Failed to get recent discussion comments for ${discussionNodeId}: ${error}`);
+      throw error;
+    }
+  }
 }

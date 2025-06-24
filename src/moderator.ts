@@ -89,7 +89,7 @@ export class Moderator {
         break;
       case 'discussion_comment':
         if (payload.action === 'created') {
-          return `Discussion Comment: ${payload.comment.body}`;
+          return await this.extractDiscussionCommentContent(payload, context);
         }
         break;
     }
@@ -136,6 +136,35 @@ export class Moderator {
     // Add the new comment being moderated
     const commentType = isPullRequestComment ? 'Review Comment' : 'Comment';
     contextContent += `New ${commentType}: ${payload.comment.body}`;
+
+    return contextContent;
+  }
+
+  private async extractDiscussionCommentContent(payload: any, context: Context): Promise<string> {
+    let contextContent = '';
+
+    try {
+      // Get parent discussion context
+      if (payload.discussion && payload.discussion.node_id) {
+        const discussion = await this.githubClient.getDiscussion(payload.discussion.node_id);
+        contextContent += `Discussion Title: ${discussion.title}\nDiscussion Body: ${discussion.body || ''}\n\n`;
+        
+        // Get recent comments for this discussion
+        const recentComments = await this.githubClient.getRecentDiscussionComments(payload.discussion.node_id, 3);
+        if (recentComments.length > 0) {
+          contextContent += `Recent Comments:\n`;
+          recentComments.forEach((comment, index) => {
+            contextContent += `${index + 1}. @${comment.user}: ${comment.body}\n`;
+          });
+          contextContent += '\n';
+        }
+      }
+    } catch (error) {
+      core.warning(`Failed to fetch discussion context: ${error}`);
+    }
+
+    // Add the new comment being moderated
+    contextContent += `New Discussion Comment: ${payload.comment.body}`;
 
     return contextContent;
   }

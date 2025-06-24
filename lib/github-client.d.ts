@@ -23,4 +23,13 @@ export declare class GitHubClient {
         created_at: string;
         user: string;
     }>>;
+    getDiscussion(discussionNodeId: string): Promise<{
+        title: string;
+        body: string | null;
+    }>;
+    getRecentDiscussionComments(discussionNodeId: string, limit?: number): Promise<Array<{
+        body: string;
+        created_at: string;
+        user: string;
+    }>>;
 }

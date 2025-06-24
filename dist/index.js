@@ -256,6 +256,60 @@ class GitHubClient {
             throw error;
         }
     }
+    async getDiscussion(discussionNodeId) {
+        try {
+            const result = await this.octokit.graphql(`
+        query($discussionId: ID!) {
+          node(id: $discussionId) {
+            ... on Discussion {
+              title
+              body
+            }
+          }
+        }
+      `, { discussionId: discussionNodeId });
+            const discussion = result.node;
+            return {
+                title: discussion.title,
+                body: discussion.body || null
+            };
+        }
+        catch (error) {
+            core.debug(`Failed to get discussion ${discussionNodeId}: ${error}`);
+            throw error;
+        }
+    }
+    async getRecentDiscussionComments(discussionNodeId, limit = 3) {
+        try {
+            const result = await this.octokit.graphql(`
+        query($discussionId: ID!, $limit: Int!) {
+          node(id: $discussionId) {
+            ... on Discussion {
+              comments(last: $limit) {
+                nodes {
+                  body
+                  createdAt
+                  author {
+                    login
+                  }
+                }
+              }
+            }
+          }
+        }
+      `, { discussionId: discussionNodeId, limit });
+            const discussion = result.node;
+            return discussion.comments.nodes.map((comment) => ({
+                body: comment.body || '',
+                created_at: comment.createdAt,
+                user: comment.author?.login || 'unknown'
+            }));
+        }
+        catch (error) {
+            core.debug(`Failed to get recent discussion comments for ${discussionNodeId}: ${error}`);
+            throw error;
+        }
+    }
 }
 exports.GitHubClient = GitHubClient;
 //# sourceMappingURL=github-client.js.map
@@ -433,7 +487,7 @@ class Moderator {
                 break;
             case 'discussion_comment':
                 if (payload.action === 'created') {
-                    return `Discussion Comment: ${payload.comment.body}`;
+                    return await this.extractDiscussionCommentContent(payload, context);
                 }
                 break;
         }
@@ -477,6 +531,31 @@ class Moderator {
         // Add the new comment being moderated
         const commentType = isPullRequestComment ? 'Review Comment' : 'Comment';
         contextContent += `New ${commentType}: ${payload.comment.body}`;
+        return contextContent;
+    }
+    async extractDiscussionCommentContent(payload, context) {
+        let contextContent = '';
+        try {
+            // Get parent discussion context
+            if (payload.discussion && payload.discussion.node_id) {
+                const discussion = await this.githubClient.getDiscussion(payload.discussion.node_id);
+                contextContent += `Discussion Title: ${discussion.title}\nDiscussion Body: ${discussion.body || ''}\n\n`;
+                // Get recent comments for this discussion
+                const recentComments = await this.githubClient.getRecentDiscussionComments(payload.discussion.node_id, 3);
+                if (recentComments.length > 0) {
+                    contextContent += `Recent Comments:\n`;
+                    recentComments.forEach((comment, index) => {
+                        contextContent += `${index + 1}. @${comment.user}: ${comment.body}\n`;
+                    });
+                    contextContent += '\n';
+                }
+            }
+        }
+        catch (error) {
+            core.warning(`Failed to fetch discussion context: ${error}`);
+        }
+        // Add the new comment being moderated
+        contextContent += `New Discussion Comment: ${payload.comment.body}`;
         return contextContent;
     }
     async getCommunityContext(context) {
