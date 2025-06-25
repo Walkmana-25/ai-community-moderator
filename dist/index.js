@@ -250,6 +250,7 @@ class GitHubClient {
                 body: comment.body || "",
                 created_at: comment.created_at,
                 user: comment.user?.login || "unknown",
+                author_association: comment.author_association || "NONE",
             }))
                 .reverse(); // Reverse to get chronological order (oldest first)
         }
@@ -294,6 +295,7 @@ class GitHubClient {
                   author {
                     login
                   }
+                  authorAssociation
                 }
               }
             }
@@ -305,6 +307,7 @@ class GitHubClient {
                 body: comment.body || "",
                 created_at: comment.createdAt,
                 user: comment.author?.login || "unknown",
+                author_association: comment.authorAssociation || "NONE",
             }));
         }
         catch (error) {
@@ -516,7 +519,7 @@ class Moderator {
                 if (recentComments.length > 0) {
                     contextContent += `Recent Comments:\n`;
                     recentComments.forEach((comment, index) => {
-                        contextContent += `${index + 1}. @${comment.user}: ${comment.body}\n`;
+                        contextContent += `${index + 1}. @${comment.user} (${comment.author_association}): ${comment.body}\n`;
                     });
                     contextContent += "\n";
                 }
@@ -529,7 +532,7 @@ class Moderator {
                 if (recentComments.length > 0) {
                     contextContent += `Recent Comments:\n`;
                     recentComments.forEach((comment, index) => {
-                        contextContent += `${index + 1}. @${comment.user}: ${comment.body}\n`;
+                        contextContent += `${index + 1}. @${comment.user} (${comment.author_association}): ${comment.body}\n`;
                     });
                     contextContent += "\n";
                 }
@@ -555,7 +558,7 @@ class Moderator {
                 if (recentComments.length > 0) {
                     contextContent += `Recent Comments:\n`;
                     recentComments.forEach((comment, index) => {
-                        contextContent += `${index + 1}. @${comment.user}: ${comment.body}\n`;
+                        contextContent += `${index + 1}. @${comment.user} (${comment.author_association}): ${comment.body}\n`;
                     });
                     contextContent += "\n";
                 }
@@ -640,6 +643,9 @@ Guidelines for your evaluation:
 - Suggest improvements when possible
 - Only recommend hiding/locking for severe violations
 - Provide educational feedback when appropriate
+- Consider the author's relationship to the repository (shown in parentheses as OWNER, COLLABORATOR, CONTRIBUTOR, MEMBER, FIRST_TIME_CONTRIBUTOR, FIRST_TIMER, or NONE)
+- Give more leeway to repository owners, collaborators, and established contributors
+- Be more vigilant with first-time contributors and users with no association to the repository
 
 Respond only with valid JSON.`;
     }

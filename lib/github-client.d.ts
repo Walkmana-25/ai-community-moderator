@@ -22,6 +22,7 @@ export declare class GitHubClient {
         body: string;
         created_at: string;
         user: string;
+        author_association: string;
     }>>;
     getDiscussion(discussionNodeId: string): Promise<{
         title: string;
@@ -31,5 +32,6 @@ export declare class GitHubClient {
         body: string;
         created_at: string;
         user: string;
+        author_association: string;
     }>>;
 }

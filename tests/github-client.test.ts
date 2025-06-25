@@ -204,16 +204,19 @@ describe("GitHubClient", () => {
             body: "Third comment",
             created_at: "2023-01-03T00:00:00Z",
             user: { login: "user3" },
+            author_association: "CONTRIBUTOR",
           },
           {
             body: "Second comment",
             created_at: "2023-01-02T00:00:00Z",
             user: { login: "user2" },
+            author_association: "COLLABORATOR",
           },
           {
             body: "First comment",
             created_at: "2023-01-01T00:00:00Z",
             user: { login: "user1" },
+            author_association: "OWNER",
           },
         ],
       });
@@ -225,16 +228,19 @@ describe("GitHubClient", () => {
           body: "First comment",
           created_at: "2023-01-01T00:00:00Z",
           user: "user1",
+          author_association: "OWNER",
         },
         {
           body: "Second comment",
           created_at: "2023-01-02T00:00:00Z",
           user: "user2",
+          author_association: "COLLABORATOR",
         },
         {
           body: "Third comment",
           created_at: "2023-01-03T00:00:00Z",
           user: "user3",
+          author_association: "CONTRIBUTOR",
         },
       ]);
       expect(mockInstance.rest.issues.listComments).toHaveBeenCalledWith({
@@ -257,6 +263,7 @@ describe("GitHubClient", () => {
             body: "Comment from unknown user",
             created_at: "2023-01-01T00:00:00Z",
             user: null,
+            author_association: null,
           },
         ],
       });
@@ -268,6 +275,7 @@ describe("GitHubClient", () => {
           body: "Comment from unknown user",
           created_at: "2023-01-01T00:00:00Z",
           user: "unknown",
+          author_association: "NONE",
         },
       ]);
     });
@@ -365,11 +373,13 @@ describe("GitHubClient", () => {
                 body: "First comment",
                 createdAt: "2023-01-01T00:00:00Z",
                 author: { login: "user1" },
+                authorAssociation: "OWNER",
               },
               {
                 body: "Second comment",
                 createdAt: "2023-01-02T00:00:00Z",
                 author: { login: "user2" },
+                authorAssociation: "COLLABORATOR",
               },
             ],
           },
@@ -383,11 +393,13 @@ describe("GitHubClient", () => {
           body: "First comment",
           created_at: "2023-01-01T00:00:00Z",
           user: "user1",
+          author_association: "OWNER",
         },
         {
           body: "Second comment",
           created_at: "2023-01-02T00:00:00Z",
           user: "user2",
+          author_association: "COLLABORATOR",
         },
       ]);
       expect(mockInstance.graphql).toHaveBeenCalledWith(
@@ -408,6 +420,7 @@ describe("GitHubClient", () => {
                 body: "Comment from unknown user",
                 createdAt: "2023-01-01T00:00:00Z",
                 author: null,
+                authorAssociation: null,
               },
             ],
           },
@@ -421,6 +434,7 @@ describe("GitHubClient", () => {
           body: "Comment from unknown user",
           created_at: "2023-01-01T00:00:00Z",
           user: "unknown",
+          author_association: "NONE",
         },
       ]);
     });
