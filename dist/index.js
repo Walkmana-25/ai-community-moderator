@@ -250,6 +250,7 @@ class GitHubClient {
                 body: comment.body || "",
                 created_at: comment.created_at,
                 user: comment.user?.login || "unknown",
+                author_association: comment.author_association || "NONE",
             }))
                 .reverse(); // Reverse to get chronological order (oldest first)
         }
@@ -294,6 +295,7 @@ class GitHubClient {
                   author {
                     login
                   }
+                  authorAssociation
                 }
               }
             }
@@ -305,6 +307,7 @@ class GitHubClient {
                 body: comment.body || "",
                 created_at: comment.createdAt,
                 user: comment.author?.login || "unknown",
+                author_association: comment.authorAssociation || "NONE",
             }));
         }
         catch (error) {
@@ -516,7 +519,7 @@ class Moderator {
                 if (recentComments.length > 0) {
                     contextContent += `Recent Comments:\n`;
                     recentComments.forEach((comment, index) => {
-                        contextContent += `${index + 1}. @${comment.user}: ${comment.body}\n`;
+                        contextContent += `${index + 1}. @${comment.user} (${comment.author_association}): ${comment.body}\n`;
                     });
                     contextContent += "\n";
                 }
@@ -529,7 +532,7 @@ class Moderator {
                 if (recentComments.length > 0) {
                     contextContent += `Recent Comments:\n`;
                     recentComments.forEach((comment, index) => {
-                        contextContent += `${index + 1}. @${comment.user}: ${comment.body}\n`;
+                        contextContent += `${index + 1}. @${comment.user} (${comment.author_association}): ${comment.body}\n`;
                     });
                     contextContent += "\n";
                 }
@@ -555,7 +558,7 @@ class Moderator {
                 if (recentComments.length > 0) {
                     contextContent += `Recent Comments:\n`;
                     recentComments.forEach((comment, index) => {
-                        contextContent += `${index + 1}. @${comment.user}: ${comment.body}\n`;
+                        contextContent += `${index + 1}. @${comment.user} (${comment.author_association}): ${comment.body}\n`;
                     });
                     contextContent += "\n";
                 }
@@ -640,6 +643,9 @@ Guidelines for your evaluation:
 - Suggest improvements when possible
 - Only recommend hiding/locking for severe violations
 - Provide educational feedback when appropriate
+- Consider the author's relationship to the repository (shown in parentheses as OWNER, COLLABORATOR, CONTRIBUTOR, MEMBER, FIRST_TIME_CONTRIBUTOR, FIRST_TIMER, or NONE)
+- Give more leeway to repository owners, collaborators, and established contributors
+- Be more vigilant with first-time contributors and users with no association to the repository
 
 Respond only with valid JSON.`;
     }
@@ -40380,16 +40386,17 @@ class Permissions extends resource_1.APIResource {
      *
      * @example
      * ```ts
-     * // Automatically fetches more pages as needed.
-     * for await (const permissionRetrieveResponse of client.fineTuning.checkpoints.permissions.retrieve(
-     *   'ft-AF1WoRqd3aJAHsqc9NY7iL8F',
-     * )) {
-     *   // ...
-     * }
+     * const permission =
+     *   await client.fineTuning.checkpoints.permissions.retrieve(
+     *     'ft-AF1WoRqd3aJAHsqc9NY7iL8F',
+     *   );
      * ```
      */
     retrieve(fineTunedModelCheckpoint, query = {}, options) {
-        return this._client.getAPIList((0, path_1.path) `/fine_tuning/checkpoints/${fineTunedModelCheckpoint}/permissions`, (pagination_1.CursorPage), { query, ...options });
+        return this._client.get((0, path_1.path) `/fine_tuning/checkpoints/${fineTunedModelCheckpoint}/permissions`, {
+            query,
+            ...options,
+        });
     }
     /**
      * **NOTE:** This endpoint requires an [admin API key](../admin-api-keys).
@@ -41480,7 +41487,7 @@ tslib_1.__exportStar(__nccwpck_require__(7787), exports);
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.VERSION = void 0;
-exports.VERSION = '5.6.0'; // x-release-please-version
+exports.VERSION = '5.7.0'; // x-release-please-version
 //# sourceMappingURL=version.js.map
 
 /***/ }),

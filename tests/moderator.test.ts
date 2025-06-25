@@ -201,11 +201,13 @@ describe("Moderator", () => {
             body: "First comment",
             created_at: "2023-01-01T00:00:00Z",
             user: "user1",
+            author_association: "CONTRIBUTOR",
           },
           {
             body: "Second comment",
             created_at: "2023-01-02T00:00:00Z",
             user: "user2",
+            author_association: "COLLABORATOR",
           },
         ]),
       };
@@ -260,8 +262,8 @@ describe("Moderator", () => {
       expect(calledPrompt).toContain("Original Issue");
       expect(calledPrompt).toContain("This is the original issue description");
       expect(calledPrompt).toContain("Recent Comments:");
-      expect(calledPrompt).toContain("@user1: First comment");
-      expect(calledPrompt).toContain("@user2: Second comment");
+      expect(calledPrompt).toContain("@user1 (CONTRIBUTOR): First comment");
+      expect(calledPrompt).toContain("@user2 (COLLABORATOR): Second comment");
       expect(calledPrompt).toContain("New Comment: This is a new comment");
     });
 
@@ -286,6 +288,7 @@ describe("Moderator", () => {
             body: "PR comment 1",
             created_at: "2023-01-01T00:00:00Z",
             user: "reviewer1",
+            author_association: "MEMBER",
           },
         ]),
       };
@@ -340,7 +343,7 @@ describe("Moderator", () => {
       expect(calledPrompt).toContain("Test PR");
       expect(calledPrompt).toContain("This is a test pull request");
       expect(calledPrompt).toContain("Recent Comments:");
-      expect(calledPrompt).toContain("@reviewer1: PR comment 1");
+      expect(calledPrompt).toContain("@reviewer1 (MEMBER): PR comment 1");
       expect(calledPrompt).toContain(
         "New Review Comment: This looks good to me",
       );
@@ -391,6 +394,7 @@ describe("Moderator", () => {
             body: "Previous comment",
             created_at: "2023-01-01T00:00:00Z",
             user: "user1",
+            author_association: "FIRST_TIME_CONTRIBUTOR",
           },
         ]),
       };
@@ -438,7 +442,9 @@ describe("Moderator", () => {
       expect(content).toContain("Discussion Title: Test Discussion");
       expect(content).toContain("Discussion Body: This is a test discussion");
       expect(content).toContain("Recent Comments:");
-      expect(content).toContain("@user1: Previous comment");
+      expect(content).toContain(
+        "@user1 (FIRST_TIME_CONTRIBUTOR): Previous comment",
+      );
       expect(content).toContain(
         "New Discussion Comment: This is a test discussion comment",
       );

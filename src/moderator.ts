@@ -141,7 +141,7 @@ export class Moderator {
         if (recentComments.length > 0) {
           contextContent += `Recent Comments:\n`;
           recentComments.forEach((comment, index) => {
-            contextContent += `${index + 1}. @${comment.user}: ${comment.body}\n`;
+            contextContent += `${index + 1}. @${comment.user} (${comment.author_association}): ${comment.body}\n`;
           });
           contextContent += "\n";
         }
@@ -163,7 +163,7 @@ export class Moderator {
         if (recentComments.length > 0) {
           contextContent += `Recent Comments:\n`;
           recentComments.forEach((comment, index) => {
-            contextContent += `${index + 1}. @${comment.user}: ${comment.body}\n`;
+            contextContent += `${index + 1}. @${comment.user} (${comment.author_association}): ${comment.body}\n`;
           });
           contextContent += "\n";
         }
@@ -202,7 +202,7 @@ export class Moderator {
         if (recentComments.length > 0) {
           contextContent += `Recent Comments:\n`;
           recentComments.forEach((comment, index) => {
-            contextContent += `${index + 1}. @${comment.user}: ${comment.body}\n`;
+            contextContent += `${index + 1}. @${comment.user} (${comment.author_association}): ${comment.body}\n`;
           });
           contextContent += "\n";
         }
@@ -310,6 +310,9 @@ Guidelines for your evaluation:
 - Suggest improvements when possible
 - Only recommend hiding/locking for severe violations
 - Provide educational feedback when appropriate
+- Consider the author's relationship to the repository (shown in parentheses as OWNER, COLLABORATOR, CONTRIBUTOR, MEMBER, FIRST_TIME_CONTRIBUTOR, FIRST_TIMER, or NONE)
+- Give more leeway to repository owners, collaborators, and established contributors
+- Be more vigilant with first-time contributors and users with no association to the repository
 
 Respond only with valid JSON.`;
   }

@@ -251,7 +251,14 @@ export class GitHubClient {
     repo: string,
     issueNumber: number,
     limit: number = 3,
-  ): Promise<Array<{ body: string; created_at: string; user: string }>> {
+  ): Promise<
+    Array<{
+      body: string;
+      created_at: string;
+      user: string;
+      author_association: string;
+    }>
+  > {
     try {
       const response = await this.octokit.rest.issues.listComments({
         owner,
@@ -267,6 +274,7 @@ export class GitHubClient {
           body: comment.body || "",
           created_at: comment.created_at,
           user: comment.user?.login || "unknown",
+          author_association: comment.author_association || "NONE",
         }))
         .reverse(); // Reverse to get chronological order (oldest first)
     } catch (error) {
@@ -309,7 +317,14 @@ export class GitHubClient {
   async getRecentDiscussionComments(
     discussionNodeId: string,
     limit: number = 3,
-  ): Promise<Array<{ body: string; created_at: string; user: string }>> {
+  ): Promise<
+    Array<{
+      body: string;
+      created_at: string;
+      user: string;
+      author_association: string;
+    }>
+  > {
     try {
       const result = await this.octokit.graphql(
         `
@@ -323,6 +338,7 @@ export class GitHubClient {
                   author {
                     login
                   }
+                  authorAssociation
                 }
               }
             }
@@ -337,6 +353,7 @@ export class GitHubClient {
         body: comment.body || "",
         created_at: comment.createdAt,
         user: comment.author?.login || "unknown",
+        author_association: comment.authorAssociation || "NONE",
       }));
     } catch (error) {
       core.debug(
