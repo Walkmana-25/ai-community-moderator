@@ -251,7 +251,14 @@ export class GitHubClient {
     repo: string,
     issueNumber: number,
     limit: number = 3,
-  ): Promise<Array<{ body: string; created_at: string; user: string; author_association: string }>> {
+  ): Promise<
+    Array<{
+      body: string;
+      created_at: string;
+      user: string;
+      author_association: string;
+    }>
+  > {
     try {
       const response = await this.octokit.rest.issues.listComments({
         owner,
@@ -310,7 +317,14 @@ export class GitHubClient {
   async getRecentDiscussionComments(
     discussionNodeId: string,
     limit: number = 3,
-  ): Promise<Array<{ body: string; created_at: string; user: string; author_association: string }>> {
+  ): Promise<
+    Array<{
+      body: string;
+      created_at: string;
+      user: string;
+      author_association: string;
+    }>
+  > {
     try {
       const result = await this.octokit.graphql(
         `
