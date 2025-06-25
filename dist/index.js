@@ -40386,16 +40386,17 @@ class Permissions extends resource_1.APIResource {
      *
      * @example
      * ```ts
-     * // Automatically fetches more pages as needed.
-     * for await (const permissionRetrieveResponse of client.fineTuning.checkpoints.permissions.retrieve(
-     *   'ft-AF1WoRqd3aJAHsqc9NY7iL8F',
-     * )) {
-     *   // ...
-     * }
+     * const permission =
+     *   await client.fineTuning.checkpoints.permissions.retrieve(
+     *     'ft-AF1WoRqd3aJAHsqc9NY7iL8F',
+     *   );
      * ```
      */
     retrieve(fineTunedModelCheckpoint, query = {}, options) {
-        return this._client.getAPIList((0, path_1.path) `/fine_tuning/checkpoints/${fineTunedModelCheckpoint}/permissions`, (pagination_1.CursorPage), { query, ...options });
+        return this._client.get((0, path_1.path) `/fine_tuning/checkpoints/${fineTunedModelCheckpoint}/permissions`, {
+            query,
+            ...options,
+        });
     }
     /**
      * **NOTE:** This endpoint requires an [admin API key](../admin-api-keys).
@@ -41486,7 +41487,7 @@ tslib_1.__exportStar(__nccwpck_require__(7787), exports);
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.VERSION = void 0;
-exports.VERSION = '5.6.0'; // x-release-please-version
+exports.VERSION = '5.7.0'; // x-release-please-version
 //# sourceMappingURL=version.js.map
 
 /***/ }),
