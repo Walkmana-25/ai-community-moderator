@@ -296,25 +296,29 @@ ${communityContext}
 Content to Review:
 ${content}
 
-Please evaluate this content and respond with a JSON object containing:
-- shouldTakeAction: boolean (true if moderation action needed)
-- actionType: string ("comment", "hide", "lock", "suggest", or "none")
-- severity: number (1-10, where 10 is most severe)
-- reason: string (explanation of your decision)
-- response: string (optional: helpful response to post as comment)
+You MUST respond with exactly one well-formed JSON object and nothing else. Do NOT include any explanatory text, Markdown, code fences, or any characters before or after the JSON object.
 
-Guidelines for your evaluation:
-- Be helpful and constructive rather than punitive
-- Consider if content violates community guidelines
-- Look for spam, harassment, off-topic content, or unhelpful contributions
-- Suggest improvements when possible
-- Only recommend hiding/locking for severe violations
-- Provide educational feedback when appropriate
-- Consider the author's relationship to the repository (shown in parentheses as OWNER, COLLABORATOR, CONTRIBUTOR, MEMBER, FIRST_TIME_CONTRIBUTOR, FIRST_TIMER, or NONE)
-- Give more leeway to repository owners, collaborators, and established contributors
-- Be more vigilant with first-time contributors and users with no association to the repository
+The JSON must use the following schema (types and constraints):
+{
+  "shouldTakeAction": boolean,
+  "actionType": "comment" | "hide" | "lock" | "suggest" | "none",
+  "severity": number,           // integer 1 - 10 (10 = most severe)
+  "reason": string,             // short explanation for the decision
+  "response": string | null     // optional: text to post as a comment; null if none
+}
 
-Respond only with valid JSON.`;
+Rules:
+- Always produce valid JSON parsable by a standard JSON.parse.
+- Do not emit comments, trailing commas, or non-JSON wrappers.
+- Ensure "actionType" is one of the allowed strings.
+- Ensure "severity" is an integer between 1 and 10. If you compute a non-integer, round to the nearest integer.
+- If you cannot identify a needed action, set "shouldTakeAction": false, "actionType": "none", "severity": 1, and provide a concise "reason".
+- If there is an actionable recommendation but no comment text is appropriate, set "response": null.
+
+Example valid response (exact JSON object, single line or pretty-printed is acceptable):
+{"shouldTakeAction": false, "actionType": "none", "severity": 1, "reason": "No violation detected", "response": null}
+
+Evaluate the content against the community guidelines and return only the JSON object that follows the schema above.`;
   }
 
   private async takeAction(
