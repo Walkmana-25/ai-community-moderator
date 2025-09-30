@@ -21,7 +21,7 @@ export interface ModerationDecision {
   actionType: "comment" | "hide" | "lock" | "suggest" | "none";
   severity: number;
   reason: string;
-  response?: string;
+  response?: string | null;
 }
 
 export class Moderator {
